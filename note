@@ -1,0 +1,9 @@
+ migrate -path database/migrations -database "postgres://rey:Pastibisa@localhost:5432/test_db?sslmode=disable" up
+
+
+buatlah app sederhana dengan 2 role user(admin, pegawai)
+dimana ada api yang hanya bisa diakses oleh admin, dan api yang hanya bisa diakses oleh pegawai.
+admin bisa membuat task untuk pegawai, dan tiap pegawai bisa melihat task nya masing-masing.
+list endpoint: 1. /register 2. /login 3. /logout protected 4. /profile (all role) 5. /task (admin) ->
+list dengan pagination, create, update, detail, delete 6. /my-task (pegawai) -> list dengan pagination, detail catatan:
+1. dokumentasi api menggungakan swagger 2. database postgresql 3. framework menggunakan fiber 4. authentikasi menggukana bearer token

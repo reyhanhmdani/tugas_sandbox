@@ -1,0 +1,672 @@
+definitions:
+  entity.ListUsers:
+    properties:
+      createdAt:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+  entity.Tasks:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  entity.User:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: integer
+      password:
+        type: string
+      role:
+        type: string
+      tasks:
+        items:
+          $ref: '#/definitions/entity.Tasks'
+        type: array
+      username:
+        type: string
+    type: object
+  request.CreateTask:
+    properties:
+      description:
+        type: string
+      title:
+        type: string
+    required:
+    - title
+    type: object
+  request.CreateUser:
+    properties:
+      password:
+        type: string
+      role:
+        type: string
+      username:
+        maxLength: 12
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  request.UpdateTask:
+    properties:
+      description:
+        type: string
+      title:
+        type: string
+    type: object
+  request.UserLogin:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  respError.ErrorResponse:
+    properties:
+      message: {}
+      status:
+        type: integer
+    type: object
+  response.LoginResponse:
+    properties:
+      id:
+        type: integer
+      message:
+        type: string
+      token:
+        type: string
+    type: object
+  response.SuccessMessageCreate:
+    properties:
+      data: {}
+      message: {}
+      status:
+        type: integer
+    type: object
+info:
+  contact: {}
+  description: 'Aplikasi Manajemen Pengguna: yang di dalam nya ada Admin dan pegawai'
+  title: Testing Back end Use fiber
+  version: "1.0"
+paths:
+  /admin/create/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Membuat tugas oleh admin untuk pegawai
+      parameters:
+      - description: ID Pegawai
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Data tugas yang akan dibuat
+        in: body
+        name: taskRequest
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateTask'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entity.Tasks'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: Create Task for Pegawai
+      tags:
+      - Create
+  /admin/createForAdmin:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: pembuatan tasks
+        in: body
+        name: userLogin
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateTask'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Tasks'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: CreateTaskAdmin
+      tags:
+      - Create
+  /admin/delete/{userId}/{taskId}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus tugas oleh admin
+      parameters:
+      - description: ID Pengguna
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: ID Tugas
+        in: path
+        name: taskId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: Delete Task for Admin
+      tags:
+      - Delete
+  /admin/deleteUser/{userId}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus pengguna dan tugas terkait (hanya untuk admin)
+      parameters:
+      - description: ID Pengguna
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: Delete User
+      tags:
+      - Delete
+  /admin/detail/{userID}:
+    get:
+      consumes:
+      - application/json
+      description: Menampilkan daftar tugas untuk pengguna tertentu dengan paginasi
+      parameters:
+      - description: ID Pengguna
+        in: path
+        name: userID
+        required: true
+        type: integer
+      - description: 'Nomor halaman (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Jumlah item per halaman (default: 5)'
+        in: query
+        name: perPage
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Tasks'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: View Tasks By User
+      tags:
+      - View
+  /admin/detailTaskPegawai/{userId}/{taskId}:
+    get:
+      consumes:
+      - application/json
+      description: Melihat detail tugas berdasarkan ID pengguna dan ID tugas
+      parameters:
+      - description: ID Pengguna
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: ID Tugas
+        in: path
+        name: taskId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Tasks'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: View Task by User and Task ID
+      tags:
+      - View
+  /admin/update/{userID}/{taskID}:
+    patch:
+      consumes:
+      - application/json
+      description: Mengupdate tugas oleh pegawai
+      parameters:
+      - description: ID Pengguna
+        in: path
+        name: userID
+        required: true
+        type: integer
+      - description: ID Tugas
+        in: path
+        name: taskID
+        required: true
+        type: integer
+      - description: Data tugas yang akan diupdate
+        in: body
+        name: taskRequest
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateTask'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Tasks'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: Update Task by Pegawai
+      tags:
+      - Update
+  /admin/update/task/{taskID}:
+    patch:
+      consumes:
+      - application/json
+      description: Mengupdate tugas oleh admin
+      parameters:
+      - description: ID Tugas
+        in: path
+        name: taskID
+        required: true
+        type: integer
+      - description: Data tugas yang akan diupdate
+        in: body
+        name: taskRequest
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateTask'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Tasks'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: Update Task for Admin
+      tags:
+      - Update
+  /allusers:
+    get:
+      consumes:
+      - application/json
+      description: View all users with pagination
+      operationId: view-all-users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of users
+          schema:
+            items:
+              $ref: '#/definitions/entity.User'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      summary: View all users
+      tags:
+      - View
+  /login:
+    post:
+      description: Melakukan otentikasi pengguna dan menghasilkan token bearer
+      parameters:
+      - description: Informasi login
+        in: body
+        name: userLogin
+        required: true
+        schema:
+          $ref: '#/definitions/request.UserLogin'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      summary: Login
+      tags:
+      - RegisterLogin
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user
+      operationId: register-user
+      parameters:
+      - description: User data
+        in: body
+        name: userRequest
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateUser'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Success Created User
+          schema:
+            $ref: '#/definitions/response.SuccessMessageCreate'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - RegisterLogin
+  /user/detailTask/{idtask}:
+    get:
+      consumes:
+      - application/json
+      description: Melihat detail tugas berdasarkan ID tugas
+      parameters:
+      - description: ID Tugas
+        in: path
+        name: idtask
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Tasks'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: Lihat Detail Tugas
+      tags:
+      - View
+  /user/logout:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.ListUsers'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: Logout
+      tags:
+      - Users
+  /user/myTask:
+    get:
+      consumes:
+      - application/json
+      description: Mengambil daftar tugas yang dimiliki oleh pengguna yang saat ini
+        masuk
+      parameters:
+      - description: Halaman tugas yang akan ditampilkan
+        in: query
+        name: page
+        type: integer
+      - description: Jumlah item per halaman
+        in: query
+        name: perPage
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Tasks'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: My Tasks
+      tags:
+      - Tasks
+  /user/profile:
+    get:
+      consumes:
+      - application/json
+      description: Profil pengguna
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.ListUsers'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: My Profile
+      tags:
+      - Users
+schemes:
+- http
+securityDefinitions:
+  apikeyauth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
