@@ -69,6 +69,8 @@ definitions:
     properties:
       password:
         type: string
+      remember:
+        type: boolean
       username:
         type: string
     required:
@@ -87,8 +89,17 @@ definitions:
         type: integer
       message:
         type: string
+      refresh_token:
+        type: string
       token:
         type: string
+    type: object
+  response.SuccessMessage:
+    properties:
+      data: {}
+      message: {}
+      status:
+        type: integer
     type: object
   response.SuccessMessageCreate:
     properties:
@@ -103,6 +114,47 @@ info:
   title: Testing Back end Use fiber
   version: "1.0"
 paths:
+  /admin/alltasks:
+    get:
+      consumes:
+      - application/json
+      description: View all tasks with pagination
+      operationId: view-all-tasks
+      parameters:
+      - description: Nomor halaman
+        in: query
+        name: page
+        type: integer
+      - description: Jumlah item per halaman
+        in: query
+        name: perPage
+        type: integer
+      - description: 'Search keyword to filter tasks (default: none)'
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of task
+          schema:
+            items:
+              $ref: '#/definitions/entity.Tasks'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: View all tasks
+      tags:
+      - auth
   /admin/create/{id}:
     post:
       consumes:
@@ -143,7 +195,7 @@ paths:
       - apikeyauth: []
       summary: Create Task for Pegawai
       tags:
-      - Create
+      - task
   /admin/createForAdmin:
     post:
       consumes:
@@ -180,7 +232,7 @@ paths:
       - apikeyauth: []
       summary: CreateTaskAdmin
       tags:
-      - Create
+      - task
   /admin/delete/{userId}/{taskId}:
     delete:
       consumes:
@@ -203,7 +255,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/respError.ErrorResponse'
+            $ref: '#/definitions/response.SuccessMessage'
         "400":
           description: Bad Request
           schema:
@@ -220,7 +272,7 @@ paths:
       - apikeyauth: []
       summary: Delete Task for Admin
       tags:
-      - Delete
+      - auth
   /admin/deleteUser/{userId}:
     delete:
       consumes:
@@ -238,7 +290,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/respError.ErrorResponse'
+            $ref: '#/definitions/response.SuccessMessage'
         "400":
           description: Bad Request
           schema:
@@ -263,7 +315,7 @@ paths:
       - apikeyauth: []
       summary: Delete User
       tags:
-      - Delete
+      - auth
   /admin/detail/{userID}:
     get:
       consumes:
@@ -304,21 +356,16 @@ paths:
       - apikeyauth: []
       summary: View Tasks By User
       tags:
-      - View
-  /admin/detailTaskPegawai/{userId}/{taskId}:
+      - task
+  /admin/detailUser/{id}:
     get:
       consumes:
       - application/json
-      description: Melihat detail tugas berdasarkan ID pengguna dan ID tugas
+      description: Menampilkan daftar tugas untuk pengguna tertentu dengan paginasi
       parameters:
       - description: ID Pengguna
         in: path
-        name: userId
-        required: true
-        type: integer
-      - description: ID Tugas
-        in: path
-        name: taskId
+        name: userID
         required: true
         type: integer
       produces:
@@ -327,7 +374,45 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/entity.Tasks'
+            items:
+              $ref: '#/definitions/entity.User'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: View Tasks By User
+      tags:
+      - auth
+  /admin/detailUserOrTask:
+    get:
+      consumes:
+      - application/json
+      description: Melihat detail pengguna atau tugas berdasarkan ID pengguna atau
+        ID tugas (salah satu atau keduanya).
+      parameters:
+      - description: ID Pengguna (opsional)
+        in: query
+        name: userId
+        type: integer
+      - description: ID Tugas (opsional)
+        in: query
+        name: taskId
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Data pengguna atau tugas
+          schema:
+            additionalProperties: true
+            type: object
         "400":
           description: Bad Request
           schema:
@@ -342,9 +427,9 @@ paths:
             $ref: '#/definitions/respError.ErrorResponse'
       security:
       - apikeyauth: []
-      summary: View Task by User and Task ID
+      summary: View User or Task by ID
       tags:
-      - View
+      - task
   /admin/update/{userID}/{taskID}:
     patch:
       consumes:
@@ -394,7 +479,7 @@ paths:
       - apikeyauth: []
       summary: Update Task by Pegawai
       tags:
-      - Update
+      - task
   /admin/update/task/{taskID}:
     patch:
       consumes:
@@ -439,13 +524,20 @@ paths:
       - apikeyauth: []
       summary: Update Task for Admin
       tags:
-      - Update
+      - task
   /allusers:
     get:
       consumes:
       - application/json
-      description: View all users with pagination
-      operationId: view-all-users
+      parameters:
+      - description: 'Nomor halaman (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Jumlah item per halaman (default: 5)'
+        in: query
+        name: perPage
+        type: integer
       produces:
       - application/json
       responses:
@@ -463,9 +555,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/respError.ErrorResponse'
-      summary: View all users
       tags:
-      - View
+      - other
   /login:
     post:
       description: Melakukan otentikasi pengguna dan menghasilkan token bearer
@@ -497,7 +588,7 @@ paths:
             $ref: '#/definitions/respError.ErrorResponse'
       summary: Login
       tags:
-      - RegisterLogin
+      - auth
   /register:
     post:
       consumes:
@@ -528,7 +619,7 @@ paths:
             $ref: '#/definitions/respError.ErrorResponse'
       summary: Register a new user
       tags:
-      - RegisterLogin
+      - task
   /user/detailTask/{idtask}:
     get:
       consumes:
@@ -563,7 +654,7 @@ paths:
       - apikeyauth: []
       summary: Lihat Detail Tugas
       tags:
-      - View
+      - task
   /user/logout:
     post:
       consumes:
@@ -593,7 +684,7 @@ paths:
       - apikeyauth: []
       summary: Logout
       tags:
-      - Users
+      - auth
   /user/myTask:
     get:
       consumes:
@@ -634,7 +725,7 @@ paths:
       - apikeyauth: []
       summary: My Tasks
       tags:
-      - Tasks
+      - auth
   /user/profile:
     get:
       consumes:
@@ -661,7 +752,54 @@ paths:
       - apikeyauth: []
       summary: My Profile
       tags:
-      - Users
+      - auth
+  /user/search:
+    get:
+      consumes:
+      - application/json
+      description: admin bisa mencari semua task, sedangkan pegawai hanya bisa mencari
+        task yang di miliki oleh pegawai pegawai
+      operationId: search-tasks
+      parameters:
+      - description: Search term
+        in: query
+        name: search
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Items per page
+        in: query
+        name: perPage
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Tasks'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: Search for tasks
+      tags:
+      - auth
 schemes:
 - http
 securityDefinitions:

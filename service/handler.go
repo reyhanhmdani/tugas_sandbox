@@ -7,6 +7,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"strconv"
 	"testing_backend/config"
+	"testing_backend/config/generate"
 	"testing_backend/config/helper"
 	"testing_backend/middleware/validation"
 	"testing_backend/model/entity"
@@ -14,6 +15,7 @@ import (
 	"testing_backend/model/respError"
 	"testing_backend/model/response"
 	"testing_backend/repository"
+	"time"
 )
 
 type Handler struct {
@@ -29,43 +31,6 @@ func NewSantriService(taskRepository repository.TaskRepository, userRepo reposit
 }
 
 // ADMIN
-
-// @Summary View all users
-// @Description View all users with pagination
-// @ID view-all-users
-// @Accept json
-// @Produce application/json
-// @Success 200 {object} []entity.User "List of users"
-// @Failure 400,500 {object} respError.ErrorResponse
-// @Router /allusers [get]
-// @Tags View
-func (h *Handler) ViewAllUsers(ctx *fiber.Ctx) error {
-	// Mendapatkan parameter halaman dan jumlah item per halaman dari query
-	page, err := strconv.Atoi(ctx.Query("page", "1"))
-	if err != nil || page < 1 {
-		page = 1
-	}
-
-	perPage, err := strconv.Atoi(ctx.Query("perPage", "5")) // Menampilkan 5 item per halaman
-	if err != nil || perPage < 1 {
-		perPage = 5
-	}
-
-	// Menghitung offset
-	offset := (page - 1) * perPage
-
-	// Mengambil daftar pengguna dengan role "pegawai" berdasarkan halaman dan jumlah per halaman
-	var users []entity.User
-	if err := h.UserRepository.PaginatePegawaiUsers(&users, perPage, offset); err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(&respError.ErrorResponse{
-			Message: err.Error(),
-			Status:  fiber.StatusInternalServerError,
-		})
-	}
-
-	return ctx.Status(fiber.StatusOK).JSON(users)
-}
-
 // @Summary My Tasks
 // @Description Mengambil daftar tugas yang dimiliki oleh pengguna yang saat ini masuk
 // @Accept json
@@ -78,7 +43,7 @@ func (h *Handler) ViewAllUsers(ctx *fiber.Ctx) error {
 // @Failure 401 {object} respError.ErrorResponse
 // @Failure 500 {object} respError.ErrorResponse
 // @Router /user/myTask [get]
-// @Tags Tasks
+// @Tags auth
 func (h *Handler) MyTask(ctx *fiber.Ctx) error {
 	user, err := h.UserRepository.GetByID(ctx.Locals("user_id").(uint))
 	if err != nil {
@@ -88,15 +53,12 @@ func (h *Handler) MyTask(ctx *fiber.Ctx) error {
 		})
 	}
 
-	// Mendapatkan parameter halaman dan jumlah item per halaman dari query
-	page, err := strconv.Atoi(ctx.Query("page", "1"))
-	if err != nil || page < 1 {
-		page = 1
-	}
-
-	perPage, err := strconv.Atoi(ctx.Query("perPage", "5")) // Menampilkan 5 item per halaman
-	if err != nil || perPage < 1 {
-		perPage = 5
+	page, perPage, _, err := helper.InitializeQueryParameters(ctx)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(respError.ErrorResponse{
+			Message: "Invalid query parameters",
+			Status:  fiber.StatusBadRequest,
+		})
 	}
 
 	// Menghitung offset
@@ -123,7 +85,7 @@ func (h *Handler) MyTask(ctx *fiber.Ctx) error {
 // @Success 201 {object} response.SuccessMessageCreate "Success Created User"
 // @Failure 400,500 {object} respError.ErrorResponse
 // @Router /register [post]
-// @Tags RegisterLogin
+// @Tags task
 func (h *Handler) Register(ctx *fiber.Ctx) error {
 	userRequest := new(request.CreateUser)
 
@@ -190,7 +152,7 @@ func (h *Handler) Register(ctx *fiber.Ctx) error {
 // @Failure 401 {object} respError.ErrorResponse
 // @Failure 404 {object} respError.ErrorResponse
 // @Router /login [post]
-// @Tags RegisterLogin
+// @Tags auth
 func (h *Handler) Login(ctx *fiber.Ctx) error {
 	var userLogin request.UserLogin
 
@@ -230,7 +192,8 @@ func (h *Handler) Login(ctx *fiber.Ctx) error {
 	rememberMe := userLogin.Remember
 
 	//membuat token
-	token, err := config.CreateJWTToken(checkUser.ID, checkUser.Role, rememberMe)
+	// Buat token (access token dan refresh token) dengan "rememberMe" sesuai permintaan pengguna
+	accessToken, refreshToken, err := config.CreateJWTToken(checkUser.ID, checkUser.UserID, rememberMe)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(&respError.ErrorResponse{
 			Message: err.Error(),
@@ -238,15 +201,48 @@ func (h *Handler) Login(ctx *fiber.Ctx) error {
 		})
 	}
 
-	// Simpan token ke dalam field "token" di tabel database
+	//// Cek apakah pengguna telah memiliki token sebelumnya
+	existingToken, err := h.UserRepository.GetValidTokenByUserID(checkUser.ID)
+	if err == nil && existingToken != nil {
+		// Hapus token sebelumnya
+		if err := h.UserRepository.DeleteValidTokenByUserID(checkUser.ID); err != nil {
+			// Tangani kesalahan saat menghapus token
+			return ctx.Status(fiber.StatusInternalServerError).JSON(&respError.ErrorResponse{
+				Message: "Error deleting previous token",
+				Status:  fiber.StatusInternalServerError,
+			})
+		}
+	}
+
 	// Simpan token ke dalam tabel valid_tokens
-	if err = h.UserRepository.AddValidToken(checkUser.ID, token); err != nil {
+	if err = h.UserRepository.AddValidToken(checkUser.ID, accessToken, refreshToken); err != nil {
 		logrus.Error("failed to add valid token")
 		return ctx.Status(fiber.StatusInternalServerError).JSON(&respError.ErrorResponse{
 			Message: err.Error(),
 			Status:  fiber.StatusInternalServerError,
 		})
 	}
+	// Simpan refresh token di cookie jika ada
+	if refreshToken != "" {
+		cookie := fiber.Cookie{
+			Name:     "refresh_token",
+			Value:    refreshToken,
+			Expires:  time.Now().Add(30 * 24 * time.Hour), // Sesuaikan dengan masa berlaku refresh token
+			HTTPOnly: true,
+		}
+		ctx.Cookie(&cookie)
+	}
+
+	// Simpan refresh token ke dalam database jika rememberMe dicentang
+	//if rememberMe {
+	//	err = h.UserRepository.StoreRefreshToken(checkUser.ID, refreshToken)
+	//	if err != nil {
+	//		return ctx.Status(fiber.StatusInternalServerError).JSON(&respError.ErrorResponse{
+	//			Message: "Refresh token storage error",
+	//			Status:  fiber.StatusInternalServerError,
+	//		})
+	//	}
+	//}
 
 	rsp := response.LoginResponse{
 		ID: checkUser.ID,
@@ -256,10 +252,15 @@ func (h *Handler) Login(ctx *fiber.Ctx) error {
 			}
 			return " user"
 		}()),
-		Token: token,
+		Token:   accessToken,
+		Refresh: refreshToken,
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(rsp)
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
+		Message: "Success Log in",
+		Status:  fiber.StatusOK,
+		Data:    rsp,
+	})
 }
 
 // @Summary My Profile
@@ -271,7 +272,7 @@ func (h *Handler) Login(ctx *fiber.Ctx) error {
 // @Failure 400 {object} respError.ErrorResponse
 // @Failure 401 {object} respError.ErrorResponse
 // @Router /user/profile [get]
-// @Tags Users
+// @Tags auth
 func (h *Handler) Profile(ctx *fiber.Ctx) error {
 	userID := ctx.Locals("user_id")
 	if userID == nil {
@@ -299,7 +300,11 @@ func (h *Handler) Profile(ctx *fiber.Ctx) error {
 		})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(profile)
+	return ctx.Status(fiber.StatusOK).JSON(&response.SuccessMessage{
+		Message: "Success untuk melihat My PRofile",
+		Status:  fiber.StatusOK,
+		Data:    profile,
+	})
 }
 
 // @Summary Logout
@@ -311,7 +316,7 @@ func (h *Handler) Profile(ctx *fiber.Ctx) error {
 // @Failure 401 {object} respError.ErrorResponse
 // @Failure 500 {object} respError.ErrorResponse
 // @Router /user/logout [post]
-// @Tags Users
+// @Tags auth
 func (h *Handler) Logout(ctx *fiber.Ctx) error {
 	userID := ctx.Locals("user_id")
 	if userID == nil {
@@ -354,7 +359,7 @@ func (h *Handler) Logout(ctx *fiber.Ctx) error {
 // @Failure 401 {object} respError.ErrorResponse
 // @Failure 500 {object} respError.ErrorResponse
 // @Router /admin/createForAdmin [post]
-// @Tags Create
+// @Tags task
 func (h *Handler) CreateTaskAdmin(ctx *fiber.Ctx) error {
 	userID := ctx.Locals("user_id")
 	if userID == nil {
@@ -404,7 +409,11 @@ func (h *Handler) CreateTaskAdmin(ctx *fiber.Ctx) error {
 		})
 	}
 
-	return ctx.Status(fiber.StatusCreated).JSON(task)
+	return ctx.Status(fiber.StatusCreated).JSON(response.SuccessMessage{
+		Message: "Success Create",
+		Status:  fiber.StatusCreated,
+		Data:    task,
+	})
 }
 
 // @Summary Create Task for Pegawai
@@ -419,7 +428,7 @@ func (h *Handler) CreateTaskAdmin(ctx *fiber.Ctx) error {
 // @Failure 500 {object} respError.ErrorResponse
 // @Security apikeyauth
 // @Router /admin/create/{id} [post]
-// @Tags Create
+// @Tags task
 func (h *Handler) CreateTaskForPegawai(ctx *fiber.Ctx) error {
 	pegawaiIDParam := ctx.Params("id")
 	pegawaiID, err := strconv.Atoi(pegawaiIDParam)
@@ -457,7 +466,7 @@ func (h *Handler) CreateTaskForPegawai(ctx *fiber.Ctx) error {
 	}
 
 	// Cek izin pembuatan tugas
-	if !config.IsAuthorizedToCreateTask(userRole, pegawaiRole) {
+	if !config.CheckAdminOrNot(userRole, pegawaiRole) {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(&respError.ErrorResponse{
 			Message: "Unauthorized: Admin cannot create tasks for other admins",
 			Status:  fiber.StatusUnauthorized,
@@ -479,7 +488,11 @@ func (h *Handler) CreateTaskForPegawai(ctx *fiber.Ctx) error {
 		})
 	}
 
-	return ctx.Status(fiber.StatusCreated).JSON(task)
+	return ctx.Status(fiber.StatusCreated).JSON(response.SuccessMessage{
+		Message: "Success Create",
+		Status:  fiber.StatusCreated,
+		Data:    task,
+	})
 }
 
 // update
@@ -496,7 +509,7 @@ func (h *Handler) CreateTaskForPegawai(ctx *fiber.Ctx) error {
 // @Failure 500 {object} respError.ErrorResponse
 // @Security apikeyauth
 // @Router /admin/update/task/{taskID} [patch]
-// @Tags Update
+// @Tags task
 func (h *Handler) UpdateTaskAdmin(ctx *fiber.Ctx) error {
 	// Dapatkan ID tugas dari URL
 	taskIDParam := ctx.Params("taskID")
@@ -550,7 +563,11 @@ func (h *Handler) UpdateTaskAdmin(ctx *fiber.Ctx) error {
 		})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(task)
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
+		Message: "Success Update",
+		Status:  fiber.StatusOK,
+		Data:    task,
+	})
 }
 
 // @Summary Update Task by Pegawai
@@ -567,7 +584,7 @@ func (h *Handler) UpdateTaskAdmin(ctx *fiber.Ctx) error {
 // @Failure 500 {object} respError.ErrorResponse
 // @Security apikeyauth
 // @Router /admin/update/{userID}/{taskID} [patch]
-// @Tags Update
+// @Tags task
 func (h *Handler) UpdateTaskPegawai(ctx *fiber.Ctx) error {
 	// Dapatkan parameter ID pengguna dan ID tugas dari URL
 	userIDParam := ctx.Params("userID")
@@ -589,6 +606,7 @@ func (h *Handler) UpdateTaskPegawai(ctx *fiber.Ctx) error {
 		})
 	}
 
+	userRole := ctx.Locals("role").(string)
 	// Parsing data tugas
 	taskRequest := new(request.UpdateTask)
 	if err := ctx.BodyParser(&taskRequest); err != nil {
@@ -598,6 +616,20 @@ func (h *Handler) UpdateTaskPegawai(ctx *fiber.Ctx) error {
 		})
 	}
 
+	pegawaiRole, err := h.TaskRepository.GetRoleByID(uint(userID))
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(&respError.ErrorResponse{
+			Message: "Id not found",
+			Status:  fiber.StatusInternalServerError,
+		})
+	}
+
+	if !config.CheckAdminOrNot(userRole, pegawaiRole) {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(&respError.ErrorResponse{
+			Message: "Unauthorized: Only 'pegawai' role can update tasks",
+			Status:  fiber.StatusUnauthorized,
+		})
+	}
 	// bisa di isi validasi kalau mau
 
 	// Retrieve the task from the database
@@ -629,10 +661,51 @@ func (h *Handler) UpdateTaskPegawai(ctx *fiber.Ctx) error {
 		})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(task)
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
+		Message: "Success Update",
+		Status:  fiber.StatusOK,
+		Data:    task,
+	})
 }
 
 // detail
+
+// @Summary View Tasks By User
+// @Description Menampilkan daftar tugas untuk pengguna tertentu dengan paginasi
+// @Accept json
+// @Produce json
+// @Param userID path int true "ID Pengguna"
+// @Success 200 {array} entity.User
+// @Failure 400 {object} respError.ErrorResponse
+// @Failure 500 {object} respError.ErrorResponse
+// @Security apikeyauth
+// @Router /admin/detailUser/{id} [get]
+// @Tags auth
+func (h *Handler) ViewUserById(ctx *fiber.Ctx) error {
+	IdParam := ctx.Params("id")
+
+	userID, err := strconv.Atoi(IdParam)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(&respError.ErrorResponse{
+			Message: "Invalid user ID",
+			Status:  fiber.StatusBadRequest,
+		})
+	}
+	user, err := h.UserRepository.GetUserByID(uint(userID))
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(&respError.ErrorResponse{
+			Message: err.Error(),
+			Status:  fiber.StatusInternalServerError,
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
+		Message: "Search Result",
+		Status:  fiber.StatusOK,
+		Data:    user,
+	})
+
+}
 
 // @Summary View Tasks By User
 // @Description Menampilkan daftar tugas untuk pengguna tertentu dengan paginasi
@@ -646,7 +719,7 @@ func (h *Handler) UpdateTaskPegawai(ctx *fiber.Ctx) error {
 // @Failure 500 {object} respError.ErrorResponse
 // @Security apikeyauth
 // @Router /admin/detail/{userID} [get]
-// @Tags View
+// @Tags task
 func (h *Handler) ViewTasksByUser(ctx *fiber.Ctx) error {
 	// Dapatkan ID pengguna dari URL
 	userIDParam := ctx.Params("userID")
@@ -659,15 +732,12 @@ func (h *Handler) ViewTasksByUser(ctx *fiber.Ctx) error {
 		})
 	}
 
-	// Mendapatkan parameter halaman dan jumlah item per halaman dari query
-	page, err := strconv.Atoi(ctx.Query("page", "1"))
-	if err != nil || page < 1 {
-		page = 1
-	}
-
-	perPage, err := strconv.Atoi(ctx.Query("perPage", "5")) // Menampilkan 5 item per halaman
-	if err != nil || perPage < 1 {
-		perPage = 5
+	page, perPage, _, err := helper.InitializeQueryParameters(ctx)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(respError.ErrorResponse{
+			Message: "Invalid query parameters",
+			Status:  fiber.StatusBadRequest,
+		})
 	}
 
 	// Menghitung offset
@@ -682,73 +752,96 @@ func (h *Handler) ViewTasksByUser(ctx *fiber.Ctx) error {
 		})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(tasks)
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
+		Message: "Success Search task By user",
+		Status:  fiber.StatusOK,
+		Data:    tasks,
+	})
 }
 
 // detail task pegawai for pegawai
 
-// @Summary View Task by User and Task ID
-// @Description Melihat detail tugas berdasarkan ID pengguna dan ID tugas
+// @Summary View User or Task by ID
+// @Description Melihat detail pengguna atau tugas berdasarkan ID pengguna atau ID tugas (salah satu atau keduanya).
 // @Accept json
 // @Produce json
-// @Param userId path int true "ID Pengguna"
-// @Param taskId path int true "ID Tugas"
-// @Success 200 {object} entity.Tasks
+// @Param userId query int false "ID Pengguna (opsional)"
+// @Param taskId query int false "ID Tugas (opsional)"
+// @Success 200 {object} map[string]interface{} "Data pengguna atau tugas"
 // @Failure 400 {object} respError.ErrorResponse
 // @Failure 401 {object} respError.ErrorResponse
 // @Failure 404 {object} respError.ErrorResponse
 // @Security apikeyauth
-// @Router /admin/detailTaskPegawai/{userId}/{taskId} [get]
-// @Tags View
-func (h *Handler) ViewTaskByUserAndTaskID(ctx *fiber.Ctx) error {
+// @Router /admin/detailUserOrTask [get]
+// @Tags task
+func (h *Handler) ViewUserOrTaskByID(ctx *fiber.Ctx) error {
 	// Periksa apakah pengguna adalah seorang admin. Anda harus memastikan hanya admin yang memiliki akses ke fitur ini.
 
 	// Dapatkan ID pengguna dari URL
-	userIDParam := ctx.Params("userId")
+	userIDParam := ctx.Query("userId")
+	taskIDParam := ctx.Query("taskId")
 
-	userID, err := strconv.Atoi(userIDParam)
-	if err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(&respError.ErrorResponse{
-			Message: "Invalid user ID",
-			Status:  fiber.StatusBadRequest,
-		})
+	var userID int
+	var taskID int
+	var err error
+
+	if userIDParam != "" {
+		userID, err = strconv.Atoi(userIDParam)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(&respError.ErrorResponse{
+				Message: "Invalid user ID",
+				Status:  fiber.StatusBadRequest,
+			})
+		}
 	}
 
 	// Dapatkan ID tugas (task) dari URL
-	taskIDParam := ctx.Params("taskId")
-
-	taskID, err := strconv.Atoi(taskIDParam)
-	if err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(&respError.ErrorResponse{
-			Message: "Invalid task ID",
-			Status:  fiber.StatusBadRequest,
-		})
+	if taskIDParam != "" {
+		taskID, err = strconv.Atoi(taskIDParam)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(&respError.ErrorResponse{
+				Message: "Invalid task ID",
+				Status:  fiber.StatusBadRequest,
+			})
+		}
 	}
 
 	// Pastikan pengguna memiliki izin untuk melihat tugas pengguna ini (contoh: admin dapat melihat tugas pengguna apa pun).
 
 	// Dapatkan detail pengguna berdasarkan ID pengguna
-	_, err = h.UserRepository.GetByID(uint(userID))
-	if err != nil {
-		return ctx.Status(fiber.StatusNotFound).JSON(&respError.ErrorResponse{
-			Message: "User not found",
-			Status:  fiber.StatusNotFound,
-		})
+	var user *entity.User
+	if userIDParam != "" {
+		// Dapatkan detail pengguna berdasarkan ID pengguna
+		user, err = h.UserRepository.GetByID(uint(userID))
+		if err != nil {
+			return ctx.Status(fiber.StatusNotFound).JSON(&respError.ErrorResponse{
+				Message: "User not found",
+				Status:  fiber.StatusNotFound,
+			})
+		}
 	}
 
-	// Dapatkan detail tugas berdasarkan ID tugas
-	task, err := h.TaskRepository.GetTaskByID(uint(taskID))
-	if err != nil {
-		return ctx.Status(fiber.StatusNotFound).JSON(&respError.ErrorResponse{
-			Message: "Task not found",
-			Status:  fiber.StatusNotFound,
-		})
+	var task *entity.Tasks
+	if taskIDParam != "" {
+		// Dapatkan detail tugas berdasarkan ID tugas
+		task, err = h.TaskRepository.GetTaskByID(uint(taskID))
+		if err != nil {
+			return ctx.Status(fiber.StatusNotFound).JSON(&respError.ErrorResponse{
+				Message: "Task not found",
+				Status:  fiber.StatusNotFound,
+			})
+		}
 	}
 
 	// Pastikan pengguna memiliki izin untuk melihat tugas pengguna ini (contoh: admin dapat melihat tugas pengguna apa pun).
 
-	// Kembalikan detail tugas sebagai respons
-	return ctx.Status(fiber.StatusOK).JSON(task)
+	// Kembalikan detail pengguna dan tugas sebagai respons
+	responseData := map[string]interface{}{"user": user, "task": task}
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
+		Message: "Search Result",
+		Status:  fiber.StatusOK,
+		Data:    responseData,
+	})
 }
 
 // @Summary Lihat Detail Tugas
@@ -762,7 +855,7 @@ func (h *Handler) ViewTaskByUserAndTaskID(ctx *fiber.Ctx) error {
 // @Failure 404 {object} respError.ErrorResponse
 // @Security apikeyauth
 // @Router /user/detailTask/{idtask} [get]
-// @Tags View
+// @Tags task
 func (h *Handler) ViewTaskByID(ctx *fiber.Ctx) error {
 	// Dapatkan ID pengguna dari token atau sesi, Anda perlu memastikan hanya pengguna yang memiliki akses ke task ini yang dapat mengaksesnya.
 
@@ -791,7 +884,11 @@ func (h *Handler) ViewTaskByID(ctx *fiber.Ctx) error {
 	// Pastikan bahwa pengguna memiliki akses ke tugas ini (contoh: pengguna adalah pemilik tugas).
 
 	// Kembalikan detail tugas sebagai respons
-	return ctx.Status(fiber.StatusOK).JSON(task)
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
+		Message: "Search Result",
+		Status:  fiber.StatusOK,
+		Data:    task,
+	})
 }
 
 // delete
@@ -801,7 +898,7 @@ func (h *Handler) ViewTaskByID(ctx *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param userId path int true "ID Pengguna"
-// @Success 200 {object} respError.ErrorResponse
+// @Success 200 {object} response.SuccessMessage
 // @Failure 400 {object} respError.ErrorResponse
 // @Failure 401 {object} respError.ErrorResponse
 // @Failure 403 {object} respError.ErrorResponse
@@ -809,7 +906,7 @@ func (h *Handler) ViewTaskByID(ctx *fiber.Ctx) error {
 // @Failure 500 {object} respError.ErrorResponse
 // @Security apikeyauth
 // @Router /admin/deleteUser/{userId} [delete]
-// @Tags Delete
+// @Tags auth
 func (h *Handler) DeleteUser(ctx *fiber.Ctx) error {
 	// Dapatkan ID pengguna yang ingin dihapus
 	userIDParam := ctx.Params("userId")
@@ -877,13 +974,13 @@ func (h *Handler) DeleteUser(ctx *fiber.Ctx) error {
 // @Produce json
 // @Param userId path int true "ID Pengguna"
 // @Param taskId path int true "ID Tugas"
-// @Success 200 {object} respError.ErrorResponse
+// @Success 200 {object} response.SuccessMessage
 // @Failure 400 {object} respError.ErrorResponse
 // @Failure 401 {object} respError.ErrorResponse
 // @Failure 500 {object} respError.ErrorResponse
 // @Security apikeyauth
 // @Router /admin/delete/{userId}/{taskId} [delete]
-// @Tags Delete
+// @Tags auth
 func (h *Handler) DeleteTaskForAdmin(ctx *fiber.Ctx) error {
 	// Pastikan pengguna yang melakukan permintaan memiliki peran "admin"
 	userRole := ctx.Locals("role").(string)
@@ -923,8 +1020,274 @@ func (h *Handler) DeleteTaskForAdmin(ctx *fiber.Ctx) error {
 		})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(&respError.ErrorResponse{
+	return ctx.Status(fiber.StatusOK).JSON(&response.SuccessMessage{
 		Message: "success delete Task",
 		Status:  fiber.StatusOK,
+	})
+}
+
+// search pagination
+
+// @Summary View all users
+// @Description View all users with pagination
+// @ID view-all-users
+
+// @Param page query int false "Nomor halaman (default: 1)"
+// @Param perPage query int false "Jumlah item per halaman (default: 5)"
+// @Accept json
+// @Produce application/json
+// @Success 200 {object} []entity.User "List of users"
+// @Failure 400,500 {object} respError.ErrorResponse
+// @Router /allusers [get]
+// @Tags other
+func (h *Handler) ViewAllUsers(ctx *fiber.Ctx) error {
+	page, perPage, _, err := helper.InitializeQueryParameters(ctx)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(respError.ErrorResponse{
+			Message: "Invalid query parameters",
+			Status:  fiber.StatusBadRequest,
+		})
+	}
+
+	// Menghitung offset
+	offset := (page - 1) * perPage
+
+	// Mengambil daftar pengguna dengan role "pegawai" berdasarkan halaman dan jumlah per halaman
+	var users []entity.User
+	if err := h.UserRepository.PaginatePegawaiUsers(&users, perPage, offset); err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(&respError.ErrorResponse{
+			Message: err.Error(),
+			Status:  fiber.StatusInternalServerError,
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
+		Message: "Success Mendapatkan List Pegawai",
+		Status:  fiber.StatusOK,
+		Data:    users,
+	})
+}
+
+// @Summary View all tasks
+// @Description View all tasks with pagination
+// @ID view-all-tasks
+// @Param page query int false "Nomor halaman"
+// @Param perPage query int false "Jumlah item per halaman"
+// @Param search query string false "Search keyword to filter tasks (default: none)"
+// @Accept json
+// @Produce application/json
+// @Success 200 {object} []entity.Tasks "List of task"
+// @Failure 400,500 {object} respError.ErrorResponse
+// @Security apikeyauth
+// @Router /admin/alltasks [get]
+// @Tags auth
+func (h *Handler) ViewAllTask(ctx *fiber.Ctx) error {
+	//var query pageStructur.PageStructur
+	//if err := ctx.QueryParser(&query); err != nil {
+	//	return ctx.Status(fiber.StatusBadRequest).JSON(respError.ErrorResponse{
+	//		Message: "Invalid query parameters",
+	//		Status:  fiber.StatusBadRequest,
+	//	})
+	//}
+	//
+	//page := query.Page
+	//search := query.Search
+
+	// Inisialisasi variabel untuk total data tugas dan total pencarian
+	var totalTasks int64
+	var totalSearch int64
+
+	var tasks []entity.Tasks
+	var err error
+
+	//// Cek apakah parameter `page` telah diberikan dalam query
+	//if page <= 0 {
+	//	// Jika tidak ada atau nilai yang tidak valid, ubah page menjadi 1
+	//	page = 1
+	//}
+	//
+	//perPage := query.PerPage
+	//if perPage <= 0 {
+	//	// Jika `perPage` tidak ada atau nilai yang tidak valid, ubah perPage menjadi 10 (default)
+	//	perPage = 10
+	//}
+
+	page, perPage, search, err := helper.InitializeQueryParameters(ctx)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(respError.ErrorResponse{
+			Message: "Invalid query parameters",
+			Status:  fiber.StatusBadRequest,
+		})
+	}
+
+	// Ambil data tugas dengan paginasi dan hitung totalnya
+	tasks, err = h.TaskRepository.AllTasksDataWithPage(perPage, page, search)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(respError.ErrorResponse{
+			Message: "Failed to retrieve tasks",
+			Status:  fiber.StatusInternalServerError,
+		})
+	}
+
+	var taskResponses []entity.TaskResponse
+
+	// Loop through the tasks and fetch usernames
+	for _, task := range tasks {
+		var user entity.User
+		if err := h.UserRepository.GetTaskByUserByID(task.UserID, &user); err == nil {
+			// Create a TaskResponse item with the username
+			taskResponse := entity.TaskResponse{
+				ID:          task.Id,
+				Title:       task.Title,
+				Description: task.Description,
+				UserID:      task.UserID,
+				Username:    user.Username,
+			}
+			// Append the item to the response slice
+			taskResponses = append(taskResponses, taskResponse)
+		}
+	}
+
+	// Hitung total data tugas berdasarkan keseluruhan data di database
+	totalTasks, err = h.TaskRepository.GetTotalTasks()
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(respError.ErrorResponse{
+			Message: "Failed to retrieve total tasks",
+			Status:  fiber.StatusInternalServerError,
+		})
+	}
+	// Hitung total pencarian berdasarkan keseluruhan data di hasil pencarian
+	totalSearch, err = h.TaskRepository.GetTotalTasksWithSearch(search)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(respError.ErrorResponse{
+			Message: "Failed to retrieve total search results",
+			Status:  fiber.StatusInternalServerError,
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(response.PageList{
+		Message:     "All tasks data",
+		Status:      fiber.StatusOK,
+		Data:        taskResponses,
+		Total:       int(totalTasks), // Total mencakup seluruh data di database
+		Page:        page,
+		PerPage:     perPage,
+		TotalSearch: int(totalSearch), // Total mencakup hasil pencarian
+	})
+}
+
+// search
+// SearchTasks pencarian tugas (optional) => berdasarkan role juga bisa,
+// @Summary Search for tasks
+// @Description admin bisa mencari semua task, sedangkan pegawai hanya bisa mencari task yang di miliki oleh pegawai pegawai
+// @ID search-tasks
+// @Accept json
+// @Produce json
+// @Param search query string true "Search term"
+// @Param page query integer false "Page number"
+// @Param perPage query integer false "Items per page"
+// @Success 200 {object} []entity.Tasks
+// @Failure 400 {object} respError.ErrorResponse
+// @Failure 401 {object} respError.ErrorResponse
+// @Failure 500 {object} respError.ErrorResponse
+// @Security apikeyauth
+// @Router /user/search [get]
+// @Tags auth
+func (h *Handler) Search(ctx *fiber.Ctx) error {
+	// Menerima kata kunci pencarian dari parameter query 'searchTerm'
+	//searchTerm := ctx.Query("search")
+
+	// Inisialisasi variabel untuk hasil pencarian
+	var tasks []entity.Tasks
+
+	//// Periksa apakah kata kunci pencarian ada
+	//if searchTerm == "" {
+	//	return ctx.Status(fiber.StatusBadRequest).JSON(respError.ErrorResponse{
+	//		Message: "Search term is required",
+	//		Status:  fiber.StatusBadRequest,
+	//	})
+	//}
+
+	userRole := ctx.Locals("role").(string)
+
+	page, perPage, search, err := helper.InitializeQueryParameters(ctx)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(respError.ErrorResponse{
+			Message: "Invalid query parameters",
+			Status:  fiber.StatusBadRequest,
+		})
+	}
+
+	// Menghitung offset
+	offset := (page - 1) * perPage
+
+	// Panggil fungsi untuk mencari tugas berdasarkan kata kunci pencarian dengan memeriksa peran pengguna
+	if userRole == "pegawai" {
+		// Jika pengguna adalah pegawai, cari tugas yang mereka miliki
+		userID := ctx.Locals("user_id").(uint) // Anda perlu menyesuaikan ini dengan cara Anda menyimpan ID pengguna
+		err = h.TaskRepository.SearchTasksForUser(&tasks, userID, search, perPage, offset)
+	} else if userRole == "admin" {
+		// Jika pengguna adalah admin, cari semua tugas
+		err = h.TaskRepository.SearchTasks(&tasks, search, perPage, offset)
+	} else {
+		// Peran pengguna tidak valid
+		return ctx.Status(fiber.StatusUnauthorized).JSON(respError.ErrorResponse{
+			Message: "Unauthorized: Invalid user role",
+			Status:  fiber.StatusUnauthorized,
+		})
+	}
+
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(respError.ErrorResponse{
+			Message: "Failed to search tasks",
+			Status:  fiber.StatusInternalServerError,
+		})
+	}
+
+	// Mengembalikan hasil pencarian
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
+		Message: "Search results",
+		Status:  fiber.StatusOK,
+		Data:    tasks,
+	})
+}
+
+func (h *Handler) RefreshTokenHandler(ctx *fiber.Ctx) error {
+	refreshTokenString := ctx.Cookies("refresh_token")
+	if refreshTokenString == "" {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(&respError.ErrorResponse{
+			Message: "Unauthorized: Refresh token tidak ditemukan",
+			Status:  fiber.StatusUnauthorized,
+		})
+	}
+
+	user, err := h.UserRepository.GetUserByRefreshToken(refreshTokenString)
+	if err != nil {
+		logrus.Error(err)
+		return ctx.Status(fiber.StatusUnauthorized).JSON(&respError.ErrorResponse{
+			Message: "Unauthorized: Refresh token tidak valid",
+			Status:  fiber.StatusUnauthorized,
+		})
+	}
+	newAccessToken, err := generate.GenerateNewAccessToken(refreshTokenString, user)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(&respError.ErrorResponse{
+			Message: "Failed to create new tokens",
+			Status:  fiber.StatusInternalServerError,
+		})
+	}
+
+	// Perbarui access token yang ada dalam tabel "valid_tokens"
+	err = h.UserRepository.UpdateAccessToken(user.UserID, newAccessToken)
+	if err != nil {
+		logrus.Error(err)
+		return ctx.Status(fiber.StatusInternalServerError).JSON(&respError.ErrorResponse{
+			Message: "Failed to update access token",
+			Status:  fiber.StatusInternalServerError,
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"access_token": newAccessToken,
 	})
 }

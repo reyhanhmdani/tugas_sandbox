@@ -44,6 +44,7 @@ func Db() (*gorm.DB, error) {
 	return db, err
 
 	// migrate -database "mysql://root:Pastibisa@tcp(localhost:3306)/goSantri" -path database/migrations up
+	//migrate -path database/migrations -database "postgres://rey:Pastibisa@localhost:5432/test_db?sslmode=disable" down
 	// migrate create -ext sql -dir database/migrations create_table_wikis
 }
 

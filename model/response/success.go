@@ -18,5 +18,6 @@ type LoginResponse struct {
 	ID      uint   `json:"id"`
 	Message string `json:"message"`
 	Token   string `json:"token"`
+	Refresh string `json:"refresh_token"`
 	Admin   bool   `json:"-"`
 }

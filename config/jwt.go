@@ -10,42 +10,69 @@ var JwtKey = []byte(os.Getenv("JWT_KEY"))
 
 type Claims struct {
 	//Username string `json:"username"`
-	UserID     uint   `json:"user_id"`
-	Role       string `json:"role"`
-	RememberMe bool   `json:"remember_me"`
+	Id     uint   `json:"id"`
+	UserID uint   `json:"user_id"`
+	Role   string `json:"role"`
 	jwt.StandardClaims
 }
 
 // Membuat token JWT
-func CreateJWTToken(userID uint, role string, rememberMe bool) (string, error) {
-	var expirationTime time.Time
-
-	if rememberMe {
-		// Jika "remember me" dicentang, atur waktu kedaluwarsa token ke 1 menit
-		expirationTime = time.Now().Add(time.Minute)
-	} else {
-		// Jika tidak, atur waktu kedaluwarsa token ke 10 detik
-		expirationTime = time.Now().Add(20 * time.Second)
-	}
-
-	// Atur payload token
-	claims := &Claims{
-		//Username: username,
+func CreateJWTToken(ID, userID uint, rememberMe bool) (string, string, error) {
+	// Set masa berlaku access token (misalnya, 1 jam)
+	accessTokenExpiration := time.Now().Add(120 * time.Second)
+	accessTokenClaims := &Claims{
+		Id:     ID,
 		UserID: userID,
-		Role:   role,
+		//Role:   role,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
+			ExpiresAt: accessTokenExpiration.Unix(),
 		},
 	}
 
-	// Buat token JWT
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims)
 
-	// Simpan token dalam string dengan mengenkripsi menggunakan secret key
-	tokenString, err := token.SignedString(JwtKey)
+	accessTokenString, err := accessToken.SignedString(JwtKey)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return tokenString, nil
+	// Jika "rememberMe" dicentang, buat refresh token
+	var refreshTokenString string
+	if rememberMe {
+		refreshTokenExpiration := time.Now().Add(24 * time.Hour) // Misalnya, berlaku selama 1 hari
+		refreshTokenClaims := &Claims{
+			UserID: userID,
+			//Role:   role,
+			StandardClaims: jwt.StandardClaims{
+				ExpiresAt: refreshTokenExpiration.Unix(),
+			},
+		}
+		refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshTokenClaims)
+		refreshTokenString, err = refreshToken.SignedString(JwtKey)
+		if err != nil {
+			return "", "", err
+		}
+	}
+
+	return accessTokenString, refreshTokenString, nil
 }
+
+//func CreateNewTokens(userID uint, role string, rememberMe bool) (string, string, error) {
+//	// Membuat access token yang baru
+//	accessToken, err := CreateAccessToken(userID, role)
+//
+//	if err != nil {
+//		return "", "", err
+//	}
+//
+//	// Membuat refresh token yang baru
+//	refreshToken, err := CreateRefreshToken(userID, role, rememberMe)
+//
+//	if err != nil {
+//		return "", "", err
+//	}
+//
+//	// Di sini, Anda dapat menyimpan refresh token yang baru untuk digunakan selanjutnya
+//
+//	return accessToken, refreshToken, nil
+//}

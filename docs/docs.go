@@ -15,6 +15,70 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/alltasks": {
+            "get": {
+                "security": [
+                    {
+                        "apikeyauth": []
+                    }
+                ],
+                "description": "View all tasks with pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "View all tasks",
+                "operationId": "view-all-tasks",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Nomor halaman",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Jumlah item per halaman",
+                        "name": "perPage",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search keyword to filter tasks (default: none)",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of task",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entity.Tasks"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/create/{id}": {
             "post": {
                 "security": [
@@ -30,7 +94,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Create"
+                    "task"
                 ],
                 "summary": "Create Task for Pegawai",
                 "parameters": [
@@ -93,7 +157,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Create"
+                    "task"
                 ],
                 "summary": "CreateTaskAdmin",
                 "parameters": [
@@ -153,7 +217,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Delete"
+                    "auth"
                 ],
                 "summary": "Delete Task for Admin",
                 "parameters": [
@@ -176,7 +240,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
+                            "$ref": "#/definitions/response.SuccessMessage"
                         }
                     },
                     "400": {
@@ -215,7 +279,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Delete"
+                    "auth"
                 ],
                 "summary": "Delete User",
                 "parameters": [
@@ -231,7 +295,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
+                            "$ref": "#/definitions/response.SuccessMessage"
                         }
                     },
                     "400": {
@@ -282,7 +346,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "View"
+                    "task"
                 ],
                 "summary": "View Tasks By User",
                 "parameters": [
@@ -331,14 +395,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/detailTaskPegawai/{userId}/{taskId}": {
+        "/admin/detailUser/{id}": {
             "get": {
                 "security": [
                     {
                         "apikeyauth": []
                     }
                 ],
-                "description": "Melihat detail tugas berdasarkan ID pengguna dan ID tugas",
+                "description": "Menampilkan daftar tugas untuk pengguna tertentu dengan paginasi",
                 "consumes": [
                     "application/json"
                 ],
@@ -346,21 +410,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "View"
+                    "auth"
                 ],
-                "summary": "View Task by User and Task ID",
+                "summary": "View Tasks By User",
                 "parameters": [
                     {
                         "type": "integer",
                         "description": "ID Pengguna",
-                        "name": "userId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID Tugas",
-                        "name": "taskId",
+                        "name": "userID",
                         "in": "path",
                         "required": true
                     }
@@ -369,7 +426,65 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/entity.Tasks"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entity.User"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/detailUserOrTask": {
+            "get": {
+                "security": [
+                    {
+                        "apikeyauth": []
+                    }
+                ],
+                "description": "Melihat detail pengguna atau tugas berdasarkan ID pengguna atau ID tugas (salah satu atau keduanya).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "View User or Task by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID Pengguna (opsional)",
+                        "name": "userId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID Tugas (opsional)",
+                        "name": "taskId",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Data pengguna atau tugas",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "400": {
@@ -408,7 +523,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Update"
+                    "task"
                 ],
                 "summary": "Update Task for Admin",
                 "parameters": [
@@ -478,7 +593,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Update"
+                    "task"
                 ],
                 "summary": "Update Task by Pegawai",
                 "parameters": [
@@ -542,7 +657,6 @@ const docTemplate = `{
         },
         "/allusers": {
             "get": {
-                "description": "View all users with pagination",
                 "consumes": [
                     "application/json"
                 ],
@@ -550,10 +664,22 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "View"
+                    "other"
                 ],
-                "summary": "View all users",
-                "operationId": "view-all-users",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Nomor halaman (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Jumlah item per halaman (default: 5)",
+                        "name": "perPage",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "List of users",
@@ -586,7 +712,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "RegisterLogin"
+                    "auth"
                 ],
                 "summary": "Login",
                 "parameters": [
@@ -638,7 +764,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "RegisterLogin"
+                    "task"
                 ],
                 "summary": "Register a new user",
                 "operationId": "register-user",
@@ -690,7 +816,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "View"
+                    "task"
                 ],
                 "summary": "Lihat Detail Tugas",
                 "parameters": [
@@ -744,7 +870,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "auth"
                 ],
                 "summary": "Logout",
                 "responses": {
@@ -793,7 +919,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Tasks"
+                    "auth"
                 ],
                 "summary": "My Tasks",
                 "parameters": [
@@ -856,7 +982,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "auth"
                 ],
                 "summary": "My Profile",
                 "responses": {
@@ -877,6 +1003,77 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/search": {
+            "get": {
+                "security": [
+                    {
+                        "apikeyauth": []
+                    }
+                ],
+                "description": "admin bisa mencari semua task, sedangkan pegawai hanya bisa mencari task yang di miliki oleh pegawai pegawai",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Search for tasks",
+                "operationId": "search-tasks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search term",
+                        "name": "search",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page",
+                        "name": "perPage",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entity.Tasks"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/respError.ErrorResponse"
                         }
@@ -997,6 +1194,9 @@ const docTemplate = `{
                 "password": {
                     "type": "string"
                 },
+                "remember": {
+                    "type": "boolean"
+                },
                 "username": {
                     "type": "string"
                 }
@@ -1020,8 +1220,21 @@ const docTemplate = `{
                 "message": {
                     "type": "string"
                 },
+                "refresh_token": {
+                    "type": "string"
+                },
                 "token": {
                     "type": "string"
+                }
+            }
+        },
+        "response.SuccessMessage": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "message": {},
+                "status": {
+                    "type": "integer"
                 }
             }
         },

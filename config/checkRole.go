@@ -1,5 +1,9 @@
 package config
 
-func IsAuthorizedToCreateTask(userRole string, pegawaiRole string) bool {
-	return userRole != "admin" || pegawaiRole != "admin"
+func CheckAdminOrNot(userRole string, role string) bool {
+	return userRole != "admin" || role != "admin"
+}
+
+func CheckUserAdminOrNot(userRole, adminRole string) bool {
+	return userRole != adminRole
 }
