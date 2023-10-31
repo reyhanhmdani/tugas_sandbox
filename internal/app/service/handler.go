@@ -875,7 +875,7 @@ func (h *Handler) ViewAllUsers(ctx *fiber.Ctx) error {
 // @Success 200 {object} []entity.Tasks "List of task"
 // @Failure 400,500 {object} respError.ErrorResponse
 // @Security apikeyauth
-// @Router /admin/alltasks [get]
+// @Router /admin/allTasks [get]
 // @Tags auth
 func (h *Handler) ViewAllTask(ctx *fiber.Ctx) error {
 	//var query pageStructur.PageStructur
@@ -1030,6 +1030,16 @@ func (h *Handler) Search(ctx *fiber.Ctx) error {
 	})
 }
 
+// RefreshTokenHandler godoc
+// @Summary Refreshes an access token using a refresh token.
+// @Description Refreshes an access token using a valid refresh token.
+// @Tags Authentication
+// @Produce json
+// @Param Cookie-Token header string true "Refresh Token obtained during login"
+// @Success 200 {object} response.TokenResponse "Successful token refresh"
+// @Failure 401 {object} respError.ErrorResponse "Unauthorized: refresh token not found or invalid"
+// @Failure 500 {object} respError.ErrorResponse "Failed to create new tokens or update access token"
+// @Router /refresh-token [post]
 func (h *Handler) RefreshTokenHandler(ctx *fiber.Ctx) error {
 	refreshTokenString := ctx.Cookies("refresh_token")
 	if refreshTokenString == "" {
@@ -1054,8 +1064,10 @@ func (h *Handler) RefreshTokenHandler(ctx *fiber.Ctx) error {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, "Failed to update access token")
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"access_token": newAccessToken,
-		"role":         newRole,
+	return ctx.Status(fiber.StatusOK).JSON(&response2.TokenResponse{
+		Message:     "Success get new access-token",
+		Status:      fiber.StatusOK,
+		AccessToken: newAccessToken,
+		Role:        newRole,
 	})
 }

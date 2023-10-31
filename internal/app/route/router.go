@@ -55,6 +55,7 @@ func (rtr *Route) RouteInit() *fiber.App {
 		// detail task para pegawai, pilih id pegawai nya baru pilih id task nya
 		admin.Get("/user-or-task-details", rtr.usersService.ViewUserOrTaskByID)
 		// detail semua tasks
+		admin.Get("/allTasks", rtr.usersService.ViewAllTask)
 
 		// DELETE
 		// menghapus user pegawai (task nya ikut kehapus semua yang dimiliki pegawai nya)
@@ -72,7 +73,6 @@ func (rtr *Route) RouteInit() *fiber.App {
 		user.Post("/logout", rtr.usersService.Logout)
 		// melihat profile sendiri
 		user.Get("/profile", rtr.usersService.Profile)
-		user.Get("/allTasks", rtr.usersService.ViewAllTask)
 
 		// detail
 		// melihat rincian task
@@ -83,7 +83,7 @@ func (rtr *Route) RouteInit() *fiber.App {
 		// refresh token
 	}
 
-	app.Post("/refresh_Token", rtr.usersService.RefreshTokenHandler)
+	app.Post("/refresh-token", rtr.usersService.RefreshTokenHandler)
 	app.Post("/register", rtr.usersService.Register)
 	// di login ada ditur remember me/ refresh token
 	app.Post("/login", rtr.usersService.Login)

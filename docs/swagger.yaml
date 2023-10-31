@@ -109,13 +109,22 @@ definitions:
       status:
         type: integer
     type: object
+  response.TokenResponse:
+    properties:
+      access_token: {}
+      message: {}
+      role:
+        type: string
+      status:
+        type: integer
+    type: object
 info:
   contact: {}
   description: 'Aplikasi Manajemen Pengguna: yang di dalam nya ada Admin dan pegawai'
   title: Testing Back end Use fiber
   version: "1.0"
 paths:
-  /admin/alltasks:
+  /admin/allTasks:
     get:
       consumes:
       - application/json
@@ -590,6 +599,33 @@ paths:
       summary: Login
       tags:
       - auth
+  /refresh-token:
+    post:
+      description: Refreshes an access token using a valid refresh token.
+      parameters:
+      - description: Refresh Token obtained during login
+        in: header
+        name: Cookie-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful token refresh
+          schema:
+            $ref: '#/definitions/response.TokenResponse'
+        "401":
+          description: 'Unauthorized: refresh token not found or invalid'
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Failed to create new tokens or update access token
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      summary: Refreshes an access token using a refresh token.
+      tags:
+      - Authentication
   /register:
     post:
       consumes:

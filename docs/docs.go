@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/admin/alltasks": {
+        "/admin/allTasks": {
             "get": {
                 "security": [
                     {
@@ -754,6 +754,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/refresh-token": {
+            "post": {
+                "description": "Refreshes an access token using a valid refresh token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Refreshes an access token using a refresh token.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Refresh Token obtained during login",
+                        "name": "Cookie-Token",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful token refresh",
+                        "schema": {
+                            "$ref": "#/definitions/response.TokenResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: refresh token not found or invalid",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to create new tokens or update access token",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/register": {
             "post": {
                 "description": "Register a new user",
@@ -1244,6 +1285,19 @@ const docTemplate = `{
             "properties": {
                 "data": {},
                 "message": {},
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
+        "response.TokenResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {},
+                "message": {},
+                "role": {
+                    "type": "string"
+                },
                 "status": {
                     "type": "integer"
                 }
