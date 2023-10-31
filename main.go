@@ -5,9 +5,9 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"os"
-	"testing_backend/database"
-	"testing_backend/route"
-	"testing_backend/service"
+	"testing_backend/internal/app/database"
+	"testing_backend/internal/app/route"
+	"testing_backend/internal/app/service"
 )
 
 // @title           Testing Back end Use fiber

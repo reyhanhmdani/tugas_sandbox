@@ -3,7 +3,7 @@ package database
 import (
 	"errors"
 	"gorm.io/gorm"
-	"testing_backend/model/entity"
+	entity2 "testing_backend/internal/app/model/entity"
 )
 
 type TaskRepository struct {
@@ -16,7 +16,7 @@ func NewTaskRepository(DB *gorm.DB) *TaskRepository {
 	}
 }
 
-func (T *TaskRepository) AllUserTasks(userID uint, tasks *[]entity.Tasks, perPage, offset int) error {
+func (T *TaskRepository) AllUserTasks(userID uint, tasks *[]entity2.Tasks, perPage, offset int) error {
 	err := T.DB.Where("user_id = ?", userID).Offset(offset).Limit(perPage).Find(tasks).Error
 	if err != nil {
 		return err
@@ -24,24 +24,24 @@ func (T *TaskRepository) AllUserTasks(userID uint, tasks *[]entity.Tasks, perPag
 	return nil
 }
 
-func (T *TaskRepository) CreateTask(task *entity.ListTaskforCreate) error {
+func (T *TaskRepository) CreateTask(task *entity2.ListTaskforCreate) error {
 	if err := T.DB.Create(task).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func (T *TaskRepository) UpdateTask(task *entity.Tasks) error {
+func (T *TaskRepository) UpdateTask(task *entity2.Tasks) error {
 	// Update the task in the database
-	err := T.DB.Model(&entity.Tasks{}).Where("id = ?", task.Id).Updates(task).Error
+	err := T.DB.Model(&entity2.Tasks{}).Where("id = ?", task.Id).Updates(task).Error
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (T *TaskRepository) GetTaskByID(taskID uint) (*entity.Tasks, error) {
-	var task entity.Tasks
+func (T *TaskRepository) GetTaskByID(taskID uint) (*entity2.Tasks, error) {
+	var task entity2.Tasks
 	err := T.DB.First(&task, taskID).Error
 	if err != nil {
 		return nil, err
@@ -49,8 +49,8 @@ func (T *TaskRepository) GetTaskByID(taskID uint) (*entity.Tasks, error) {
 	return &task, nil
 }
 
-func (T *TaskRepository) GetTasksByUserIDWithPage(userID uint, perPage, offset int) ([]entity.Tasks, error) {
-	var tasks []entity.Tasks
+func (T *TaskRepository) GetTasksByUserIDWithPage(userID uint, perPage, offset int) ([]entity2.Tasks, error) {
+	var tasks []entity2.Tasks
 	err := T.DB.Where("user_id = ?", userID).Offset(offset).Limit(perPage).Find(&tasks).Error
 	if err != nil {
 		return nil, err
@@ -58,8 +58,8 @@ func (T *TaskRepository) GetTasksByUserIDWithPage(userID uint, perPage, offset i
 	return tasks, nil
 }
 
-func (T *TaskRepository) GetTasksByUserID(userID uint) ([]entity.Tasks, error) {
-	var tasks []entity.Tasks
+func (T *TaskRepository) GetTasksByUserID(userID uint) ([]entity2.Tasks, error) {
+	var tasks []entity2.Tasks
 	err := T.DB.Where("user_id = ?", userID).Find(&tasks).Error
 	if err != nil {
 		return nil, err
@@ -67,8 +67,8 @@ func (T *TaskRepository) GetTasksByUserID(userID uint) ([]entity.Tasks, error) {
 	return tasks, nil
 }
 
-func (T *TaskRepository) AllTasksDataWithPage(perPage, page int, search string) ([]entity.Tasks, error) {
-	var tasks []entity.Tasks
+func (T *TaskRepository) AllTasksDataWithPage(perPage, page int, search string) ([]entity2.Tasks, error) {
+	var tasks []entity2.Tasks
 	offset := (page - 1) * perPage
 	if search == "" {
 		// Jika tidak ada parameter pencarian, lakukan paginasi pada semua data tugas
@@ -85,8 +85,8 @@ func (T *TaskRepository) AllTasksDataWithPage(perPage, page int, search string) 
 	return tasks, nil
 }
 
-func (T *TaskRepository) AllTasksData(search string) ([]entity.Tasks, error) {
-	var tasks []entity.Tasks
+func (T *TaskRepository) AllTasksData(search string) ([]entity2.Tasks, error) {
+	var tasks []entity2.Tasks
 	if search == "" {
 		// Jika tidak ada parameter pencarian, ambil semua data tugas
 		if err := T.DB.Find(&tasks).Error; err != nil {
@@ -104,7 +104,7 @@ func (T *TaskRepository) AllTasksData(search string) ([]entity.Tasks, error) {
 
 func (T *TaskRepository) GetTotalTasks() (int64, error) {
 	var count int64
-	err := T.DB.Model(&entity.Tasks{}).Count(&count).Error
+	err := T.DB.Model(&entity2.Tasks{}).Count(&count).Error
 	if err != nil {
 		return 0, err
 	}
@@ -114,7 +114,7 @@ func (T *TaskRepository) GetTotalTasks() (int64, error) {
 
 func (T *TaskRepository) GetTotalTasksWithSearch(search string) (int64, error) {
 	var count int64
-	err := T.DB.Model(&entity.Tasks{}).Where("title LIKE ?", "%"+search+"%").Count(&count).Error
+	err := T.DB.Model(&entity2.Tasks{}).Where("title LIKE ?", "%"+search+"%").Count(&count).Error
 	if err != nil {
 		return 0, err
 	}
@@ -124,7 +124,7 @@ func (T *TaskRepository) GetTotalTasksWithSearch(search string) (int64, error) {
 
 // other
 func (T *TaskRepository) GetRoleByID(userID uint) (string, error) {
-	user := &entity.User{}
+	user := &entity2.User{}
 	err := T.DB.Where("id = ?", userID).First(user).Error
 	if err != nil {
 		return "", err
@@ -133,7 +133,7 @@ func (T *TaskRepository) GetRoleByID(userID uint) (string, error) {
 }
 
 // search
-func (T *TaskRepository) SearchTasks(tasks *[]entity.Tasks, searchTerm string, perPage, offset int) error {
+func (T *TaskRepository) SearchTasks(tasks *[]entity2.Tasks, searchTerm string, perPage, offset int) error {
 	// Mencari tugas berdasarkan kata kunci pencarian
 	query := "%" + searchTerm + "%" // Tambahkan karakter wildcard (%) di awal dan akhir kata
 	err := T.DB.Where("title LIKE ?", query).Offset(offset).Limit(perPage).Find(tasks).Error
@@ -143,7 +143,7 @@ func (T *TaskRepository) SearchTasks(tasks *[]entity.Tasks, searchTerm string, p
 	return nil
 }
 
-func (T *TaskRepository) SearchTasksForUser(tasks *[]entity.Tasks, userID uint, searchTerm string, perPage, offset int) error {
+func (T *TaskRepository) SearchTasksForUser(tasks *[]entity2.Tasks, userID uint, searchTerm string, perPage, offset int) error {
 	// Mencari tugas berdasarkan kata kunci pencarian yang dimiliki oleh pengguna
 	query := "%" + searchTerm + "%" // Tambahkan karakter wildcard (%) di awal dan akhir kata
 	err := T.DB.Where("user_id = ? AND title LIKE ?", userID, query).Offset(offset).Limit(perPage).Find(tasks).Error
@@ -159,7 +159,7 @@ func (T *TaskRepository) SearchTasksForUser(tasks *[]entity.Tasks, userID uint, 
 
 func (T *TaskRepository) DeleteTaskByUserAndID(userID, taskID uint) error {
 	// Hapus tugas dengan ID tugas dan ID pengguna tertentu
-	result := T.DB.Where("user_id = ? AND id = ?", userID, taskID).Delete(&entity.Tasks{})
+	result := T.DB.Where("user_id = ? AND id = ?", userID, taskID).Delete(&entity2.Tasks{})
 	if result.RowsAffected == 0 {
 		// Tidak ada tugas yang dihapus, tugas tidak ditemukan
 		return errors.New("task not found")

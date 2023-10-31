@@ -2,7 +2,7 @@ package helper
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"testing_backend/model/pageStructur"
+	"testing_backend/internal/app/model/pageStructur"
 )
 
 func InitializeQueryParameters(ctx *fiber.Ctx) (int, int, string, error) {

@@ -2,9 +2,9 @@ package generate
 
 import (
 	"errors"
-	"testing_backend/config"
-	"testing_backend/database"
-	"testing_backend/model/entity"
+	"testing_backend/internal/app/config"
+	"testing_backend/internal/app/database"
+	"testing_backend/internal/app/model/entity"
 )
 
 func GenerateNewAccessToken(refreshToken string, user *entity.RefreshToken) (string, error) {

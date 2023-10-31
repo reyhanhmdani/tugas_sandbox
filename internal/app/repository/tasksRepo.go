@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"testing_backend/model/entity"
+	"testing_backend/internal/app/model/entity"
 )
 
 type TaskRepository interface {

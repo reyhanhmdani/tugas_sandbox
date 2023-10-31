@@ -4,10 +4,10 @@ import (
 	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gofiber/fiber/v2"
-	"testing_backend/config"
-	"testing_backend/database"
-	"testing_backend/model/entity"
-	"testing_backend/model/respError"
+	"testing_backend/internal/app/config"
+	"testing_backend/internal/app/database"
+	"testing_backend/internal/app/model/entity"
+	"testing_backend/internal/app/model/respError"
 )
 
 func PegawaiMiddleware() fiber.Handler {

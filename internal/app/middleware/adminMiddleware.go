@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gofiber/fiber/v2"
-	"testing_backend/config"
-	"testing_backend/database"
-	"testing_backend/model/entity"
-	"testing_backend/model/respError"
+	"testing_backend/internal/app/config"
+	"testing_backend/internal/app/database"
+	entity2 "testing_backend/internal/app/model/entity"
+	"testing_backend/internal/app/model/respError"
 )
 
 func AdminMiddleware() fiber.Handler {
@@ -97,7 +97,7 @@ func AdminMiddleware() fiber.Handler {
 
 		// Cek apakah token ada di dalam tabel valid_token
 		userID := claims.UserID
-		validToken := &entity.ValidToken{}
+		validToken := &entity2.ValidToken{}
 		if err = db.Where("user_id = ? AND token = ?", userID, tokenString).First(&validToken).Error; err != nil {
 			return ctx.Status(fiber.StatusUnauthorized).JSON(respError.ErrorResponse{
 				Message: "Unauthorized: Invalid or expired token",
@@ -117,7 +117,7 @@ func AdminMiddleware() fiber.Handler {
 		//		Status:  fiber.StatusUnauthorized,
 		//	})
 		//}
-		var user entity.User
+		var user entity2.User
 		if err = db.Where("id = ? AND role = ?", userID, "admin").First(&user).Error; err != nil {
 			return ctx.Status(fiber.StatusUnauthorized).JSON(respError.ErrorResponse{
 				Message: "Unauthorized: Only admin can access this endpoint",

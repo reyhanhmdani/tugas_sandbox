@@ -1,8 +1,8 @@
 package helper
 
 import (
-	"testing_backend/model/entity"
-	"testing_backend/model/request"
+	"testing_backend/internal/app/model/entity"
+	"testing_backend/internal/app/model/request"
 )
 
 func UpdateTaskFields(task *entity.Tasks, updateData request.UpdateTask) {

@@ -5,8 +5,8 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/swagger"
 	_ "testing_backend/docs"
-	"testing_backend/middleware"
-	"testing_backend/service"
+	middleware2 "testing_backend/internal/app/middleware"
+	"testing_backend/internal/app/service"
 )
 
 type Route struct {
@@ -23,7 +23,7 @@ func (rtr *Route) RouteInit() *fiber.App {
 	app := fiber.New()
 
 	// log
-	app.Use(middleware.Logger())
+	app.Use(middleware2.Logger())
 
 	// swag
 	app.Use(cors.New(cors.Config{
@@ -34,7 +34,7 @@ func (rtr *Route) RouteInit() *fiber.App {
 	//
 
 	// ini hanya bisa di akses oleh admin
-	admin := app.Group("/admin", middleware.AdminMiddleware())
+	admin := app.Group("/admin", middleware2.AdminMiddleware())
 	{
 		//admin.Get("/allusers", rtr.usersService.ViewAllUsers)
 		// admin bisa membuat task untuk admin sendiri (optional)
@@ -64,7 +64,7 @@ func (rtr *Route) RouteInit() *fiber.App {
 	}
 
 	// ini bisa di akses sesudah login (all role)
-	user := app.Group("/user", middleware.PegawaiMiddleware())
+	user := app.Group("/user", middleware2.PegawaiMiddleware())
 	{
 		// untuk melihat task masing masing
 		user.Get("/myTask", rtr.usersService.MyTask)
