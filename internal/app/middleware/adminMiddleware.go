@@ -108,17 +108,27 @@ func AdminMiddleware() fiber.Handler {
 		// Menetapkan data pengguna dari token ke dalam konteks
 		//ctx.Locals("username", claims.Username)
 		ctx.Locals("user_id", claims.UserID)
-		//ctx.Locals("role", claims.Role) // Menambahkan data peran ke konteks
+		ctx.Locals("role", claims.Role) // Menambahkan data peran ke konteks
 
 		// Pengecekan peran admin
+		//logrus.Info("claims.Role: ", claims.Role)
 		//if claims.Role != "admin" {
 		//	return ctx.Status(fiber.StatusUnauthorized).JSON(respError.ErrorResponse{
 		//		Message: "Unauthorized: Only admin can access this endpoint",
 		//		Status:  fiber.StatusUnauthorized,
 		//	})
 		//}
+		//
 		var user entity2.User
-		if err = db.Where("id = ? AND role = ?", userID, "admin").First(&user).Error; err != nil {
+		if err = db.Where("id = ?", userID).First(&user).Error; err != nil {
+			return ctx.Status(fiber.StatusUnauthorized).JSON(respError.ErrorResponse{
+				Message: "Unauthorized: User not found",
+				Status:  fiber.StatusUnauthorized,
+			})
+		}
+
+		// Periksa peran pengguna
+		if user.Role != "admin" {
 			return ctx.Status(fiber.StatusUnauthorized).JSON(respError.ErrorResponse{
 				Message: "Unauthorized: Only admin can access this endpoint",
 				Status:  fiber.StatusUnauthorized,

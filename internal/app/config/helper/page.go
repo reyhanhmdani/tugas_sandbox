@@ -2,29 +2,38 @@ package helper
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"testing_backend/internal/app/model/pageStructur"
 )
 
-func InitializeQueryParameters(ctx *fiber.Ctx) (int, int, string, error) {
-	var query pageStructur.PageStructur
+type PageStructur struct {
+	Page    int    `query:"page"`
+	PerPage int    `query:"per_page"`
+	Search  string `query:"search"`
+	Offset  int64  `query:"offset"`
+}
+
+func InitializeQueryParameters(ctx *fiber.Ctx) (int, int, int, string, error) {
+	var query PageStructur
 	if err := ctx.QueryParser(&query); err != nil {
-		return 0, 0, "", err
+		return 0, 0, 0, "", err
 	}
 
 	page := query.Page
 	search := query.Search
+	offset := int(query.Offset)
 
-	// Cek apakah parameter `page` telah diberikan dalam query
+	// Check if the `page` parameter has been provided in the query
 	if page <= 0 {
-		// Jika tidak ada atau nilai yang tidak valid, ubah page menjadi 1
+		// If not provided or an invalid value, set `page` to 1
 		page = 1
 	}
 
 	perPage := query.PerPage
 	if perPage <= 0 {
-		// Jika `perPage` tidak ada atau nilai yang tidak valid, ubah perPage menjadi 10 (default)
+		// If `perPage` is not provided or an invalid value, set `perPage` to 10 (default)
 		perPage = 10
 	}
 
-	return page, perPage, search, nil
+	offset = perPage * (page - 1)
+
+	return page, perPage, offset, search, nil
 }

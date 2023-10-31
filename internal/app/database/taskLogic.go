@@ -58,9 +58,8 @@ func (T *TaskRepository) GetTasksByUserIDWithPage(userID uint, perPage, offset i
 	return tasks, nil
 }
 
-func (T *TaskRepository) AllTasksDataWithPage(perPage, page int, search string) ([]entity2.Tasks, error) {
+func (T *TaskRepository) AllTasksDataWithPage(search string, perPage, offset int) ([]entity2.Tasks, error) {
 	var tasks []entity2.Tasks
-	offset := (page - 1) * perPage
 	if search == "" {
 		// Jika tidak ada parameter pencarian, lakukan paginasi pada semua data tugas
 		if err := T.DB.Limit(perPage).Offset(offset).Find(&tasks).Error; err != nil {

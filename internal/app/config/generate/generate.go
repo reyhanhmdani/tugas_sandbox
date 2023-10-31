@@ -7,7 +7,7 @@ import (
 	"testing_backend/internal/app/model/entity"
 )
 
-func GenerateNewAccessToken(refreshToken string, user *entity.RefreshToken) (string, error) {
+func GenerateNewAccessToken(refreshToken string, role string, user *entity.RefreshToken) (string, string, error) {
 	//var userLogin request.UserLogin
 
 	db, _ := database.Db()
@@ -15,16 +15,14 @@ func GenerateNewAccessToken(refreshToken string, user *entity.RefreshToken) (str
 	// Contoh validasi menggunakan GORM:
 	var validRefreshToken entity.GenerateRefreshToken
 	if err := db.Where("id = ? AND refresh_token = ?", user.ID, refreshToken).First(&validRefreshToken).Error; err != nil {
-		return "", errors.New("Invalid refresh token")
+		return "", "", errors.New("Invalid refresh token")
 	}
-
-	//rememberMe := userLogin.Remember
 
 	// Jika refresh token masih valid, Anda dapat membuat access token yang baru
-	accessTokenString, _, err := config.CreateJWTToken(validRefreshToken.UserID, validRefreshToken.Role, false) // false menunjukkan bahwa bukan remember me
+	accessTokenString, _, err := config.CreateJWTToken(validRefreshToken.UserID, role, false) // false menunjukkan bahwa bukan remember me
 	if err != nil {
-		return "", errors.New("Failed to create a new access token")
+		return "", "", errors.New("Failed to create a new access token")
 	}
 
-	return accessTokenString, nil
+	return accessTokenString, role, nil
 }

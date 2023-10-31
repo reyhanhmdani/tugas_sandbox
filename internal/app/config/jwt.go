@@ -9,7 +9,6 @@ import (
 var JwtKey = []byte(os.Getenv("JWT_KEY"))
 
 type Claims struct {
-	//Username string `json:"username"`
 	UserID uint   `json:"user_id"`
 	Role   string `json:"role"`
 	jwt.StandardClaims
@@ -18,8 +17,9 @@ type Claims struct {
 // Membuat token JWT
 func CreateJWTToken(userID uint, role string, rememberMe bool) (string, string, error) {
 	// Set masa berlaku access token (misalnya, 1 jam)
-	accessTokenExpiration := time.Now().Add(120 * time.Second)
+	accessTokenExpiration := time.Now().Add(60 * time.Minute)
 	accessTokenClaims := &Claims{
+		//ID:     Id,
 		UserID: userID,
 		Role:   role,
 		StandardClaims: jwt.StandardClaims{

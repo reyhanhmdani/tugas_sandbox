@@ -53,7 +53,7 @@ func (h *Handler) MyTask(ctx *fiber.Ctx) error {
 		})
 	}
 
-	page, perPage, _, err := helper2.InitializeQueryParameters(ctx)
+	_, perPage, offset, _, err := helper2.InitializeQueryParameters(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(respError.ErrorResponse{
 			Message: "Invalid query parameters",
@@ -62,7 +62,7 @@ func (h *Handler) MyTask(ctx *fiber.Ctx) error {
 	}
 
 	// Menghitung offset
-	offset := (page - 1) * perPage
+	//offset := (page - 1) * perPage
 
 	// Mengambil daftar tugas untuk pengguna tertentu berdasarkan halaman dan jumlah per halaman
 	var tasks []entity2.Tasks
@@ -596,13 +596,13 @@ func (h *Handler) ViewTasksByUser(ctx *fiber.Ctx) error {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid user ID")
 	}
 
-	page, perPage, _, err := helper2.InitializeQueryParameters(ctx)
+	_, perPage, offset, _, err := helper2.InitializeQueryParameters(ctx)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid query parameters")
 	}
 
 	// Menghitung offset
-	offset := (page - 1) * perPage
+	//offset := (page - 1) * perPage
 
 	// Mengambil daftar tugas untuk pengguna tertentu berdasarkan halaman dan jumlah per halaman
 	tasks, err := h.TaskRepository.GetTasksByUserIDWithPage(uint(userID), perPage, offset)
@@ -843,13 +843,13 @@ func (h *Handler) DeleteTaskForAdmin(ctx *fiber.Ctx) error {
 // @Router /allusers [get]
 // @Tags other
 func (h *Handler) ViewAllUsers(ctx *fiber.Ctx) error {
-	page, perPage, _, err := helper2.InitializeQueryParameters(ctx)
+	_, perPage, offset, _, err := helper2.InitializeQueryParameters(ctx)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid query parameters")
 	}
 
 	// Menghitung offset
-	offset := (page - 1) * perPage
+	//offset := (page - 1) * perPage
 
 	// Mengambil daftar pengguna dengan role "pegawai" berdasarkan halaman dan jumlah per halaman
 	var users []entity2.User
@@ -908,14 +908,14 @@ func (h *Handler) ViewAllTask(ctx *fiber.Ctx) error {
 	//	perPage = 10
 	//}
 
-	page, perPage, search, err := helper2.InitializeQueryParameters(ctx)
+	page, perPage, offset, search, err := helper2.InitializeQueryParameters(ctx)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid query parameters")
 
 	}
 
 	// Ambil data tugas dengan paginasi dan hitung totalnya
-	tasks, err = h.TaskRepository.AllTasksDataWithPage(perPage, page, search)
+	tasks, err = h.TaskRepository.AllTasksDataWithPage(search, perPage, offset)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, "Failed to retrieve tasks")
 	}
@@ -997,13 +997,13 @@ func (h *Handler) Search(ctx *fiber.Ctx) error {
 
 	userRole := ctx.Locals("role").(string)
 
-	page, perPage, search, err := helper2.InitializeQueryParameters(ctx)
+	_, perPage, offset, search, err := helper2.InitializeQueryParameters(ctx)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid query parameters")
 	}
 
 	// Menghitung offset
-	offset := (page - 1) * perPage
+	//offset := (page - 1) * perPage
 
 	// Panggil fungsi untuk mencari tugas berdasarkan kata kunci pencarian dengan memeriksa peran pengguna
 	if userRole == "pegawai" {
@@ -1042,7 +1042,7 @@ func (h *Handler) RefreshTokenHandler(ctx *fiber.Ctx) error {
 		logrus.Error(err)
 		return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized: refresh token invalid")
 	}
-	newAccessToken, err := generate.GenerateNewAccessToken(refreshTokenString, user)
+	newAccessToken, newRole, err := generate.GenerateNewAccessToken(refreshTokenString, user.Role, user)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, "Failed to create new tokens")
 	}
@@ -1056,5 +1056,6 @@ func (h *Handler) RefreshTokenHandler(ctx *fiber.Ctx) error {
 
 	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
 		"access_token": newAccessToken,
+		"role":         newRole,
 	})
 }

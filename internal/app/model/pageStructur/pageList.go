@@ -1,11 +1,5 @@
 package pageStructur
 
-type PageStructur struct {
-	Page    int    `query:"page"`
-	PerPage int    `query:"per_page"`
-	Search  string `query:"search"`
-}
-
 type PageListWithUser struct {
 	Message     string         `json:"message"`
 	Status      int            `json:"status"`
