@@ -58,15 +58,6 @@ func (T *TaskRepository) GetTasksByUserIDWithPage(userID uint, perPage, offset i
 	return tasks, nil
 }
 
-func (T *TaskRepository) GetTasksByUserID(userID uint) ([]entity2.Tasks, error) {
-	var tasks []entity2.Tasks
-	err := T.DB.Where("user_id = ?", userID).Find(&tasks).Error
-	if err != nil {
-		return nil, err
-	}
-	return tasks, nil
-}
-
 func (T *TaskRepository) AllTasksDataWithPage(perPage, page int, search string) ([]entity2.Tasks, error) {
 	var tasks []entity2.Tasks
 	offset := (page - 1) * perPage
@@ -79,23 +70,6 @@ func (T *TaskRepository) AllTasksDataWithPage(perPage, page int, search string) 
 		query := "%" + search + "%"
 		// Jika ada parameter pencarian, lakukan paginasi pada data tugas yang sesuai dengan pencarian
 		if err := T.DB.Limit(perPage).Offset(offset).Where("title LIKE ?", query).Find(&tasks).Error; err != nil {
-			return tasks, err
-		}
-	}
-	return tasks, nil
-}
-
-func (T *TaskRepository) AllTasksData(search string) ([]entity2.Tasks, error) {
-	var tasks []entity2.Tasks
-	if search == "" {
-		// Jika tidak ada parameter pencarian, ambil semua data tugas
-		if err := T.DB.Find(&tasks).Error; err != nil {
-			return tasks, err
-		}
-	} else {
-		query := "%" + search + "%"
-		// Jika ada parameter pencarian, filter data tugas berdasarkan pencarian
-		if err := T.DB.Where("title LIKE ?", query).Find(&tasks).Error; err != nil {
 			return tasks, err
 		}
 	}

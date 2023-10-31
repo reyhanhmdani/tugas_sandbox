@@ -2,7 +2,6 @@ package repository
 
 import (
 	entity2 "testing_backend/internal/app/model/entity"
-	"time"
 )
 
 type UserRepository interface {
@@ -20,11 +19,9 @@ type UserRepository interface {
 
 	CheckUsername(username string) (*entity2.UserLogin, error)
 	PaginatePegawaiUsers(users *[]entity2.User, perPage, offset int) error
-	PaginateTaskUsers(tasks *[]entity2.Tasks, perPage, offset int) error
 	// token
 	//UpdateUserToken(user *entity.User) error
 	AddValidToken(userID uint, token, refreshToken string) error
-	AddRefreshToken(userID uint, refreshToken string) error
 	// DELETE USER
 
 	DeleteTasksByUserID(userID uint) error
@@ -32,9 +29,6 @@ type UserRepository interface {
 
 	//Logout
 	DeleteUserToken(userID uint) error
-	UpdateTokenExpiration(userID uint, expirationSeconds time.Time) error
-	GetUserIDByToken(token string) (uint, error)
-
 	// login
 	GetValidTokenByUserID(userID uint) (*entity2.ValidToken, error)
 	DeleteValidTokenByUserID(userID uint) error
@@ -42,7 +36,6 @@ type UserRepository interface {
 	//AddTokenToBlacklist(blacklistToken config.BlacklistToken)
 
 	// validtoken
-	ValidateTokenInDatabase(tokenString string) (uint, error)
 	StoreRefreshToken(userID uint, refreshToken string) error
 
 	// refresh token

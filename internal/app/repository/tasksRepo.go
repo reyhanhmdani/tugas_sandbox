@@ -14,9 +14,7 @@ type TaskRepository interface {
 
 	// detail
 	GetTasksByUserIDWithPage(userID uint, perPage, offset int) ([]entity.Tasks, error)
-	GetTasksByUserID(userID uint) ([]entity.Tasks, error)
 	AllTasksDataWithPage(perPage, page int, search string) ([]entity.Tasks, error)
-	AllTasksData(search string) ([]entity.Tasks, error)
 	GetTotalTasks() (int64, error)
 	GetTotalTasksWithSearch(search string) (int64, error)
 

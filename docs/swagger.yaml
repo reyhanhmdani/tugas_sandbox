@@ -153,7 +153,7 @@ paths:
       summary: View all tasks
       tags:
       - auth
-  /admin/create/{id}:
+  /admin/create-task/{id}:
     post:
       consumes:
       - application/json
@@ -194,7 +194,7 @@ paths:
       summary: Create Task for Pegawai
       tags:
       - task
-  /admin/createForAdmin:
+  /admin/crete-task:
     post:
       consumes:
       - application/json
@@ -231,7 +231,7 @@ paths:
       summary: CreateTaskAdmin
       tags:
       - task
-  /admin/delete/{userId}/{taskId}:
+  /admin/delete-task/{userId}/{taskId}:
     delete:
       consumes:
       - application/json
@@ -271,7 +271,7 @@ paths:
       summary: Delete Task for Admin
       tags:
       - auth
-  /admin/deleteUser/{userId}:
+  /admin/delete-user/{userId}:
     delete:
       consumes:
       - application/json
@@ -314,103 +314,30 @@ paths:
       summary: Delete User
       tags:
       - auth
-  /admin/detail/{userID}:
-    get:
+  /admin/update-task/{taskID}:
+    patch:
       consumes:
       - application/json
-      description: Menampilkan daftar tugas untuk pengguna tertentu dengan paginasi
+      description: Mengupdate tugas oleh admin
       parameters:
-      - description: ID Pengguna
+      - description: ID Tugas
         in: path
-        name: userID
+        name: taskID
         required: true
         type: integer
-      - description: 'Nomor halaman (default: 1)'
-        in: query
-        name: page
-        type: integer
-      - description: 'Jumlah item per halaman (default: 5)'
-        in: query
-        name: perPage
-        type: integer
+      - description: Data tugas yang akan diupdate
+        in: body
+        name: taskRequest
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateTask'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/entity.Tasks'
-            type: array
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/respError.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/respError.ErrorResponse'
-      security:
-      - apikeyauth: []
-      summary: View Tasks By User
-      tags:
-      - task
-  /admin/detailUser/{id}:
-    get:
-      consumes:
-      - application/json
-      description: Menampilkan daftar tugas untuk pengguna tertentu dengan paginasi
-      parameters:
-      - description: ID Pengguna
-        in: path
-        name: userID
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/entity.User'
-            type: array
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/respError.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/respError.ErrorResponse'
-      security:
-      - apikeyauth: []
-      summary: View Tasks By User
-      tags:
-      - auth
-  /admin/detailUserOrTask:
-    get:
-      consumes:
-      - application/json
-      description: Melihat detail pengguna atau tugas berdasarkan ID pengguna atau
-        ID tugas (salah satu atau keduanya).
-      parameters:
-      - description: ID Pengguna (opsional)
-        in: query
-        name: userId
-        type: integer
-      - description: ID Tugas (opsional)
-        in: query
-        name: taskId
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Data pengguna atau tugas
-          schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/entity.Tasks'
         "400":
           description: Bad Request
           schema:
@@ -423,12 +350,16 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
       security:
       - apikeyauth: []
-      summary: View User or Task by ID
+      summary: Update Task for Admin
       tags:
       - task
-  /admin/update/{userID}/{taskID}:
+  /admin/update-task/{userID}/{taskID}:
     patch:
       consumes:
       - application/json
@@ -478,30 +409,62 @@ paths:
       summary: Update Task by Pegawai
       tags:
       - task
-  /admin/update/task/{taskID}:
-    patch:
+  /admin/user-detail/{id}:
+    get:
       consumes:
       - application/json
-      description: Mengupdate tugas oleh admin
+      description: Menampilkan daftar tugas untuk pengguna tertentu dengan paginasi
       parameters:
-      - description: ID Tugas
+      - description: ID Pengguna
         in: path
-        name: taskID
+        name: userID
         required: true
         type: integer
-      - description: Data tugas yang akan diupdate
-        in: body
-        name: taskRequest
-        required: true
-        schema:
-          $ref: '#/definitions/request.UpdateTask'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/entity.Tasks'
+            items:
+              $ref: '#/definitions/entity.User'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: View Tasks By User
+      tags:
+      - auth
+  /admin/user-or-task-details:
+    get:
+      consumes:
+      - application/json
+      description: Melihat detail pengguna atau tugas berdasarkan ID pengguna atau
+        ID tugas (salah satu atau keduanya).
+      parameters:
+      - description: ID Pengguna (opsional)
+        in: query
+        name: userId
+        type: integer
+      - description: ID Tugas (opsional)
+        in: query
+        name: taskId
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Data pengguna atau tugas
+          schema:
+            additionalProperties: true
+            type: object
         "400":
           description: Bad Request
           schema:
@@ -514,13 +477,50 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: View User or Task by ID
+      tags:
+      - task
+  /admin/user-tasks/{userID}:
+    get:
+      consumes:
+      - application/json
+      description: Menampilkan daftar tugas untuk pengguna tertentu dengan paginasi
+      parameters:
+      - description: ID Pengguna
+        in: path
+        name: userID
+        required: true
+        type: integer
+      - description: 'Nomor halaman (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Jumlah item per halaman (default: 5)'
+        in: query
+        name: perPage
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.Tasks'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/respError.ErrorResponse'
       security:
       - apikeyauth: []
-      summary: Update Task for Admin
+      summary: View Tasks By User
       tags:
       - task
   /allusers:

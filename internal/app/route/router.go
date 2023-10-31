@@ -38,29 +38,29 @@ func (rtr *Route) RouteInit() *fiber.App {
 	{
 		//admin.Get("/allusers", rtr.usersService.ViewAllUsers)
 		// admin bisa membuat task untuk admin sendiri (optional)
-		admin.Post("/createForAdmin", rtr.usersService.CreateTaskAdmin)
+		admin.Post("/create-task", rtr.usersService.CreateTaskAdmin)
 
 		// admin bisa membuatkan task untuk pegawainya
-		admin.Post("/create/:id", rtr.usersService.CreateTaskForPegawai)
+		admin.Post("/create-task/:id", rtr.usersService.CreateTaskForPegawai)
 
 		// ini untuk update task admin sendiri kalau ada (optional)
-		admin.Patch("/update/task/:taskID", rtr.usersService.UpdateTaskAdmin)
+		admin.Patch("/update-task/:taskID", rtr.usersService.UpdateTaskAdmin)
 		// ini untuk update task para pegawai nya, pilih id pegawai nya baru pilih id task nya
-		admin.Patch("/update/:userID/:taskID", rtr.usersService.UpdateTaskPegawai)
+		admin.Patch("/update-task/:userID/:taskID", rtr.usersService.UpdateTaskPegawai)
 
 		// detail
 		// detail para pegawai
-		admin.Get("/detailUser/:id", rtr.usersService.ViewUserById)
-		admin.Get("/detail/:userID", rtr.usersService.ViewTasksByUser)
+		admin.Get("/user-detail/:id", rtr.usersService.ViewUserById)
+		admin.Get("/user-tasks/:userID", rtr.usersService.ViewTasksByUser)
 		// detail task para pegawai, pilih id pegawai nya baru pilih id task nya
-		admin.Get("/detailUserOrTask", rtr.usersService.ViewUserOrTaskByID)
+		admin.Get("/user-or-task-details", rtr.usersService.ViewUserOrTaskByID)
 		// detail semua tasks
 
 		// DELETE
 		// menghapus user pegawai (task nya ikut kehapus semua yang dimiliki pegawai nya)
-		admin.Delete("/deleteUser/:userId", rtr.usersService.DeleteUser)
+		admin.Delete("/delete-user/:userId", rtr.usersService.DeleteUser)
 		// menghapus task pegawai, pilih id pegawai nya baru pilih id task nya
-		admin.Delete("/delete/:userId/:taskId", rtr.usersService.DeleteTaskForAdmin)
+		admin.Delete("/delete-task/:userId/:taskId", rtr.usersService.DeleteTaskForAdmin)
 	}
 
 	// ini bisa di akses sesudah login (all role)

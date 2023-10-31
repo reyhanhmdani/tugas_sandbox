@@ -2,11 +2,8 @@ package database
 
 import (
 	"errors"
-	"github.com/dgrijalva/jwt-go"
 	"gorm.io/gorm"
-	"testing_backend/internal/app/config"
 	entity2 "testing_backend/internal/app/model/entity"
-	"time"
 )
 
 type UserRepository struct {
@@ -95,14 +92,6 @@ func (U *UserRepository) PaginatePegawaiUsers(users *[]entity2.User, perPage, of
 	return nil
 }
 
-func (U *UserRepository) PaginateTaskUsers(tasks *[]entity2.Tasks, perPage, offset int) error {
-	err := U.DB.Offset(offset).Limit(perPage).Find(tasks).Error
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // token
 
 func (U *UserRepository) AddValidToken(userID uint, token, refreshToken string) error {
@@ -124,20 +113,6 @@ func (U *UserRepository) AddValidToken(userID uint, token, refreshToken string) 
 			return err
 		}
 	}
-	return nil
-}
-func (U *UserRepository) AddRefreshToken(userID uint, refreshToken string) error {
-	// Buat objek RefreshToken berdasarkan model data Anda
-	refresh := entity2.ValidToken{
-		UserID: userID,
-		Token:  refreshToken,
-	}
-
-	// Simpan refresh token ke dalam database menggunakan GORM
-	if err := U.DB.Create(&refresh).Error; err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -170,31 +145,6 @@ func (U *UserRepository) DeleteUserToken(userID uint) error {
 	return nil
 }
 
-func (U *UserRepository) UpdateTokenExpiration(userID uint, expirationSeconds time.Time) error {
-	// Perbarui token_expiration dengan waktu kadaluwarsa
-	err := U.DB.Model(&entity2.ValidToken{}).Where("user_id = ?", userID).Update("token_expiration", expirationSeconds).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (U *UserRepository) GetUserIDByToken(token string) (uint, error) {
-	var validToken entity2.ValidToken
-
-	// Cari validToken berdasarkan token di dalam database menggunakan GORM
-	if err := U.DB.Where("token = ?", token).First(&validToken).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// Token tidak ditemukan
-			return 0, err
-		}
-		return 0, err
-	}
-
-	return validToken.UserID, nil
-}
-
 // login
 func (U *UserRepository) GetValidTokenByUserID(userID uint) (*entity2.ValidToken, error) {
 	validToken := &entity2.ValidToken{}
@@ -215,34 +165,6 @@ func (U *UserRepository) DeleteValidTokenByUserID(userID uint) error {
 }
 
 // valid token
-
-func (U *UserRepository) ValidateTokenInDatabase(tokenString string) (uint, error) {
-	// Parsing token dengan secret key
-	claims := &config.Claims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return config.JwtKey, nil
-	})
-
-	if err != nil {
-		if errors.Is(err, jwt.ErrSignatureInvalid) {
-			return 0, err
-		}
-		return 0, err
-	}
-
-	if !token.Valid {
-		return 0, err
-	}
-
-	// Cek apakah token ada dalam tabel valid_token
-	var validToken entity2.ValidToken
-	if err := U.DB.Where("token = ?", tokenString).First(&validToken).Error; err != nil {
-		return 0, err
-	}
-
-	return claims.UserID, nil
-}
-
 func (U *UserRepository) StoreRefreshToken(userID uint, refreshToken string) error {
 	// Buat atau perbarui token penyegaran di dalam database
 	refresh := entity2.ValidToken{

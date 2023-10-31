@@ -79,7 +79,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/create/{id}": {
+        "/admin/create-task/{id}": {
             "post": {
                 "security": [
                     {
@@ -143,7 +143,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/createForAdmin": {
+        "/admin/crete-task": {
             "post": {
                 "security": [
                     {
@@ -202,7 +202,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/delete/{userId}/{taskId}": {
+        "/admin/delete-task/{userId}/{taskId}": {
             "delete": {
                 "security": [
                     {
@@ -264,7 +264,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/deleteUser/{userId}": {
+        "/admin/delete-user/{userId}": {
             "delete": {
                 "security": [
                     {
@@ -331,184 +331,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/detail/{userID}": {
-            "get": {
-                "security": [
-                    {
-                        "apikeyauth": []
-                    }
-                ],
-                "description": "Menampilkan daftar tugas untuk pengguna tertentu dengan paginasi",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "task"
-                ],
-                "summary": "View Tasks By User",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID Pengguna",
-                        "name": "userID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Nomor halaman (default: 1)",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Jumlah item per halaman (default: 5)",
-                        "name": "perPage",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entity.Tasks"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/detailUser/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "apikeyauth": []
-                    }
-                ],
-                "description": "Menampilkan daftar tugas untuk pengguna tertentu dengan paginasi",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "View Tasks By User",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID Pengguna",
-                        "name": "userID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entity.User"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/detailUserOrTask": {
-            "get": {
-                "security": [
-                    {
-                        "apikeyauth": []
-                    }
-                ],
-                "description": "Melihat detail pengguna atau tugas berdasarkan ID pengguna atau ID tugas (salah satu atau keduanya).",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "task"
-                ],
-                "summary": "View User or Task by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID Pengguna (opsional)",
-                        "name": "userId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID Tugas (opsional)",
-                        "name": "taskId",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Data pengguna atau tugas",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/update/task/{taskID}": {
+        "/admin/update-task/{taskID}": {
             "patch": {
                 "security": [
                     {
@@ -578,7 +401,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/update/{userID}/{taskID}": {
+        "/admin/update-task/{userID}/{taskID}": {
             "patch": {
                 "security": [
                     {
@@ -642,6 +465,183 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/user-detail/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "apikeyauth": []
+                    }
+                ],
+                "description": "Menampilkan daftar tugas untuk pengguna tertentu dengan paginasi",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "View Tasks By User",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID Pengguna",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entity.User"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/user-or-task-details": {
+            "get": {
+                "security": [
+                    {
+                        "apikeyauth": []
+                    }
+                ],
+                "description": "Melihat detail pengguna atau tugas berdasarkan ID pengguna atau ID tugas (salah satu atau keduanya).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "View User or Task by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID Pengguna (opsional)",
+                        "name": "userId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID Tugas (opsional)",
+                        "name": "taskId",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Data pengguna atau tugas",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/user-tasks/{userID}": {
+            "get": {
+                "security": [
+                    {
+                        "apikeyauth": []
+                    }
+                ],
+                "description": "Menampilkan daftar tugas untuk pengguna tertentu dengan paginasi",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "View Tasks By User",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID Pengguna",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Nomor halaman (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Jumlah item per halaman (default: 5)",
+                        "name": "perPage",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entity.Tasks"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/respError.ErrorResponse"
                         }
