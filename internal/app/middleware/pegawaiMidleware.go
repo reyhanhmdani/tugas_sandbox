@@ -15,19 +15,13 @@ func PegawaiMiddleware() fiber.Handler {
 		db, err := database.Db()
 		if err != nil {
 			// Handle error jika gagal menginisialisasi db
-			return ctx.Status(fiber.StatusInternalServerError).JSON(&respError.ErrorResponse{
-				Message: "Database connection error",
-				Status:  fiber.StatusInternalServerError,
-			})
+			return respError.ErrResponse(ctx, fiber.StatusInternalServerError, "Database connection error")
 		}
 		// Mengambil token dari header Authorization
 		authHeader := ctx.Get("Authorization")
 
 		if authHeader == "" {
-			return ctx.Status(fiber.StatusUnauthorized).JSON(&respError.ErrorResponse{
-				Message: "Unauthorized",
-				Status:  fiber.StatusUnauthorized,
-			})
+			return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized")
 		}
 
 		// Memisahkan token dari header
@@ -41,31 +35,19 @@ func PegawaiMiddleware() fiber.Handler {
 
 		if err != nil {
 			if errors.Is(err, jwt.ErrSignatureInvalid) {
-				return ctx.Status(fiber.StatusUnauthorized).JSON(&respError.ErrorResponse{
-					Message: "Unauthorized",
-					Status:  fiber.StatusUnauthorized,
-				})
+				return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized")
 			}
-			return ctx.Status(fiber.StatusBadRequest).JSON(&respError.ErrorResponse{
-				Message: "Invalid or expired token",
-				Status:  fiber.StatusBadRequest,
-			})
+			return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid or expired token")
 		}
 
 		if !token.Valid {
-			return ctx.Status(fiber.StatusUnauthorized).JSON(&respError.ErrorResponse{
-				Message: "Unauthorized (non Valid)",
-				Status:  fiber.StatusUnauthorized,
-			})
+			return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized (non Valid)")
 		}
 
 		// refresh
 		refreshTokenString := ctx.Cookies("refresh_token")
 		if refreshTokenString == "" {
-			return ctx.Status(fiber.StatusUnauthorized).JSON(&respError.ErrorResponse{
-				Message: "Unauthorized: Refresh token tidak ditemukan",
-				Status:  fiber.StatusUnauthorized,
-			})
+			return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized: Refresh token tidak ditemukan")
 		}
 
 		// Validasi refresh token
@@ -76,39 +58,25 @@ func PegawaiMiddleware() fiber.Handler {
 
 		if err != nil {
 			if errors.Is(err, jwt.ErrSignatureInvalid) {
-				return ctx.Status(fiber.StatusUnauthorized).JSON(&respError.ErrorResponse{
-					Message: "Unauthorized: Invalid refresh token",
-					Status:  fiber.StatusUnauthorized,
-				})
+				return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized: Invalid refresh token")
 			}
-			return ctx.Status(fiber.StatusBadRequest).JSON(&respError.ErrorResponse{
-				Message: "Invalid or expired refresh token",
-				Status:  fiber.StatusBadRequest,
-			})
-
+			return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid or expired refresh token")
 		}
 
 		// Cek apakah token ada di dalam tabel valid_token
 		userID := claims.UserID
 		validToken := &entity.ValidToken{}
 		if err = db.Where("user_id = ? AND token = ?", userID, tokenString).First(&validToken).Error; err != nil {
-			return ctx.Status(fiber.StatusUnauthorized).JSON(respError.ErrorResponse{
-				Message: "Unauthorized: Invalid or expired token",
-				Status:  fiber.StatusUnauthorized,
-			})
+			return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized: Invalid or expired token")
 		}
 
 		// Menetapkan data pengguna dari token ke dalam konteks
-		// ctx.Locals("username", claims.Username)
 		ctx.Locals("user_id", claims.UserID)
 		ctx.Locals("role", claims.Role) // Menambahkan data peran ke konteks
 
 		if !refreshToken.Valid {
 			// Cek apakah refresh token kadaluwarsa
-			return ctx.Status(fiber.StatusUnauthorized).JSON(&respError.ErrorResponse{
-				Message: "Unauthorized: token tidak valid or expired refresh token",
-				Status:  fiber.StatusUnauthorized,
-			})
+			return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized: token tidak valid or expired refresh token")
 		}
 
 		// Melanjutkan ke handler jika semua pengecekan berhasil

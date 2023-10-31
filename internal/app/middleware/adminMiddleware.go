@@ -16,19 +16,13 @@ func AdminMiddleware() fiber.Handler {
 		db, err := database.Db()
 		if err != nil {
 			// Handle error jika gagal menginisialisasi db
-			return ctx.Status(fiber.StatusInternalServerError).JSON(&respError.ErrorResponse{
-				Message: "Database connection error",
-				Status:  fiber.StatusInternalServerError,
-			})
+			return respError.ErrResponse(ctx, fiber.StatusInternalServerError, "Database connection error")
 		}
 		// Mengambil token dari header Authorization
 		authHeader := ctx.Get("Authorization")
 
 		if authHeader == "" {
-			return ctx.Status(fiber.StatusUnauthorized).JSON(&respError.ErrorResponse{
-				Message: "Unauthorized",
-				Status:  fiber.StatusUnauthorized,
-			})
+			return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized")
 		}
 
 		// Memisahkan token dari header
@@ -45,31 +39,19 @@ func AdminMiddleware() fiber.Handler {
 
 		if err != nil {
 			if errors.Is(err, jwt.ErrSignatureInvalid) {
-				return ctx.Status(fiber.StatusUnauthorized).JSON(&respError.ErrorResponse{
-					Message: "Unauthorized",
-					Status:  fiber.StatusUnauthorized,
-				})
+				return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized")
 			}
-			return ctx.Status(fiber.StatusBadRequest).JSON(&respError.ErrorResponse{
-				Message: "Invalid or expired token",
-				Status:  fiber.StatusBadRequest,
-			})
+			return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid or expired token")
 		}
 
 		if !token.Valid {
-			return ctx.Status(fiber.StatusUnauthorized).JSON(&respError.ErrorResponse{
-				Message: "Unauthorized (non Valid)",
-				Status:  fiber.StatusUnauthorized,
-			})
+			return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized (non Valid)")
 		}
 
 		// refresh
 		refreshTokenString := ctx.Cookies("refresh_token")
 		if refreshTokenString == "" {
-			return ctx.Status(fiber.StatusUnauthorized).JSON(&respError.ErrorResponse{
-				Message: "Unauthorized: Refresh token tidak ditemukan",
-				Status:  fiber.StatusUnauthorized,
-			})
+			return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized: Refresh token tidak ditemukan")
 		}
 
 		// Validasi refresh token
@@ -83,26 +65,17 @@ func AdminMiddleware() fiber.Handler {
 
 		if err != nil {
 			if errors.Is(err, jwt.ErrSignatureInvalid) {
-				return ctx.Status(fiber.StatusUnauthorized).JSON(&respError.ErrorResponse{
-					Message: "Unauthorized: Invalid refresh token",
-					Status:  fiber.StatusUnauthorized,
-				})
+				return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Invalid or expired token")
 			}
-			return ctx.Status(fiber.StatusBadRequest).JSON(&respError.ErrorResponse{
-				Message: "Invalid or expired refresh token",
-				Status:  fiber.StatusBadRequest,
-			})
-
+			return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Invalid or expired token")
 		}
 
 		// Cek apakah token ada di dalam tabel valid_token
 		userID := claims.UserID
 		validToken := &entity2.ValidToken{}
 		if err = db.Where("user_id = ? AND token = ?", userID, tokenString).First(&validToken).Error; err != nil {
-			return ctx.Status(fiber.StatusUnauthorized).JSON(respError.ErrorResponse{
-				Message: "Unauthorized: Invalid or expired token",
-				Status:  fiber.StatusUnauthorized,
-			})
+			return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized: Invalid or expired token")
+
 		}
 
 		// Menetapkan data pengguna dari token ke dalam konteks
@@ -121,26 +94,19 @@ func AdminMiddleware() fiber.Handler {
 		//
 		var user entity2.User
 		if err = db.Where("id = ?", userID).First(&user).Error; err != nil {
-			return ctx.Status(fiber.StatusUnauthorized).JSON(respError.ErrorResponse{
-				Message: "Unauthorized: User not found",
-				Status:  fiber.StatusUnauthorized,
-			})
+			return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized: User not found")
 		}
 
 		// Periksa peran pengguna
 		if user.Role != "admin" {
-			return ctx.Status(fiber.StatusUnauthorized).JSON(respError.ErrorResponse{
-				Message: "Unauthorized: Only admin can access this endpoint",
-				Status:  fiber.StatusUnauthorized,
-			})
+			return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized: Only admin can access this endpoint")
+
 		}
 
 		if !refreshToken.Valid {
 			// Cek apakah refresh token kadaluwarsa
-			return ctx.Status(fiber.StatusUnauthorized).JSON(&respError.ErrorResponse{
-				Message: "Unauthorized: token tidak valid or expired refresh token",
-				Status:  fiber.StatusUnauthorized,
-			})
+			return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized: token tidak valid or expired refresh token")
+
 		}
 
 		// Melanjutkan ke handler jika semua pengecekan berhasil

@@ -1155,10 +1155,14 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "password",
+                "password_confirm",
                 "username"
             ],
             "properties": {
                 "password": {
+                    "type": "string"
+                },
+                "password_confirm": {
                     "type": "string"
                 },
                 "role": {
