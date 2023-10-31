@@ -8,7 +8,7 @@ type TaskRepository interface {
 	AllUserTasks(userID uint, tasks *[]entity.Tasks, perPage, offset int) error
 
 	//ADMIN
-	CreateTask(task *entity.Tasks) error
+	CreateTask(task *entity.ListTaskforCreate) error
 	UpdateTask(task *entity.Tasks) error
 	GetTaskByID(taskID uint) (*entity.Tasks, error)
 

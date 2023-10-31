@@ -19,3 +19,14 @@ type TaskResponse struct {
 	UserID      uint   `json:"user_id"`
 	Username    string `json:"username"`
 }
+
+type ListTaskforCreate struct {
+	Id          uint   `json:"id"`
+	UserID      uint   `json:"user_id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
+
+func (ListTaskforCreate) TableName() string {
+	return "tasks"
+}

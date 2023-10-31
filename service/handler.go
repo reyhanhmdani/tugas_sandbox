@@ -193,7 +193,7 @@ func (h *Handler) Login(ctx *fiber.Ctx) error {
 
 	//membuat token
 	// Buat token (access token dan refresh token) dengan "rememberMe" sesuai permintaan pengguna
-	accessToken, refreshToken, err := config.CreateJWTToken(checkUser.ID, checkUser.UserID, rememberMe)
+	accessToken, refreshToken, err := config.CreateJWTToken(checkUser.ID, checkUser.Role, rememberMe)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(&respError.ErrorResponse{
 			Message: err.Error(),
@@ -394,8 +394,8 @@ func (h *Handler) CreateTaskAdmin(ctx *fiber.Ctx) error {
 		})
 	}
 
-	task := &entity.Tasks{
-		UserID:      uint(userIdInt64), // Gunakan ID admin yang telah masuk
+	task := &entity.ListTaskforCreate{
+		UserID:      userIdInt64, // Gunakan ID admin yang telah masuk
 		Title:       taskRequest.Title,
 		Description: taskRequest.Description,
 	}
@@ -473,7 +473,7 @@ func (h *Handler) CreateTaskForPegawai(ctx *fiber.Ctx) error {
 		})
 	}
 
-	task := &entity.Tasks{
+	task := &entity.ListTaskforCreate{
 		UserID:      uint(pegawaiID), // Menggunakan nilai yang sesuai
 		Title:       taskRequest.Title,
 		Description: taskRequest.Description,

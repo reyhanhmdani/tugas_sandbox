@@ -14,14 +14,15 @@ func (ValidToken) TableName() string {
 	return "valid_tokens"
 }
 
-//TokenExpiration time.Time `gorm:"type:timetz"` // Waktu kadaluwarsa token
+type GenerateRefreshToken struct {
+	ID     uint   `json:"id"`
+	UserID uint   `json:"user_id"`
+	Role   string `json:"role"`
+}
 
-//type ValidRefreshToken struct {
-//	ID           uint
-//	UserID       uint
-//	RefreshToken string
-//	CreatedAt    time.Time
-//}
+func (GenerateRefreshToken) TableName() string {
+	return "valid_tokens"
+}
 
 type RefreshToken struct {
 	ID           uint   `gorm:"primaryKey" json:"id"`

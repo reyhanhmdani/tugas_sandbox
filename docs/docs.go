@@ -1109,6 +1109,9 @@ const docTemplate = `{
                 "title": {
                     "type": "string"
                 },
+                "user": {
+                    "$ref": "#/definitions/entity.User"
+                },
                 "user_id": {
                     "type": "integer"
                 }
@@ -1128,12 +1131,6 @@ const docTemplate = `{
                 },
                 "role": {
                     "type": "string"
-                },
-                "tasks": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/entity.Tasks"
-                    }
                 },
                 "username": {
                     "type": "string"

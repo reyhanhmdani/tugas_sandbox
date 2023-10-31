@@ -89,9 +89,9 @@ func PegawaiMiddleware() fiber.Handler {
 		}
 
 		// Cek apakah token ada di dalam tabel valid_token
-		userID := claims.Id
+		userID := claims.UserID
 		validToken := &entity.ValidToken{}
-		if err = db.Where("id = ? AND token = ?", userID, tokenString).First(&validToken).Error; err != nil {
+		if err = db.Where("user_id = ? AND token = ?", userID, tokenString).First(&validToken).Error; err != nil {
 			return ctx.Status(fiber.StatusUnauthorized).JSON(respError.ErrorResponse{
 				Message: "Unauthorized: Invalid or expired token",
 				Status:  fiber.StatusUnauthorized,

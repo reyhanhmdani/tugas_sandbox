@@ -98,7 +98,7 @@ func AdminMiddleware() fiber.Handler {
 		// Cek apakah token ada di dalam tabel valid_token
 		userID := claims.UserID
 		validToken := &entity.ValidToken{}
-		if err = db.Where("id = ? AND token = ?", userID, tokenString).First(&validToken).Error; err != nil {
+		if err = db.Where("user_id = ? AND token = ?", userID, tokenString).First(&validToken).Error; err != nil {
 			return ctx.Status(fiber.StatusUnauthorized).JSON(respError.ErrorResponse{
 				Message: "Unauthorized: Invalid or expired token",
 				Status:  fiber.StatusUnauthorized,
@@ -111,7 +111,14 @@ func AdminMiddleware() fiber.Handler {
 		//ctx.Locals("role", claims.Role) // Menambahkan data peran ke konteks
 
 		// Pengecekan peran admin
-		if claims.Role != "admin" {
+		//if claims.Role != "admin" {
+		//	return ctx.Status(fiber.StatusUnauthorized).JSON(respError.ErrorResponse{
+		//		Message: "Unauthorized: Only admin can access this endpoint",
+		//		Status:  fiber.StatusUnauthorized,
+		//	})
+		//}
+		var user entity.User
+		if err = db.Where("id = ? AND role = ?", userID, "admin").First(&user).Error; err != nil {
 			return ctx.Status(fiber.StatusUnauthorized).JSON(respError.ErrorResponse{
 				Message: "Unauthorized: Only admin can access this endpoint",
 				Status:  fiber.StatusUnauthorized,

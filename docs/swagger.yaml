@@ -16,6 +16,8 @@ definitions:
         type: integer
       title:
         type: string
+      user:
+        $ref: '#/definitions/entity.User'
       user_id:
         type: integer
     type: object
@@ -29,10 +31,6 @@ definitions:
         type: string
       role:
         type: string
-      tasks:
-        items:
-          $ref: '#/definitions/entity.Tasks'
-        type: array
       username:
         type: string
     type: object

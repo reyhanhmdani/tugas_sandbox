@@ -24,7 +24,7 @@ func (T *TaskRepository) AllUserTasks(userID uint, tasks *[]entity.Tasks, perPag
 	return nil
 }
 
-func (T *TaskRepository) CreateTask(task *entity.Tasks) error {
+func (T *TaskRepository) CreateTask(task *entity.ListTaskforCreate) error {
 	if err := T.DB.Create(task).Error; err != nil {
 		return err
 	}
