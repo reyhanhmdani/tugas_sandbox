@@ -1,24 +1,24 @@
 package repository
 
 import (
-	entity2 "testing_backend/internal/app/model/entity"
+	"testing_backend/internal/app/model"
 )
 
 type UserRepository interface {
 
 	// all data
-	AllUsersData() ([]entity2.User, error)
+	AllUsersData() ([]model.User, error)
 	// CRUD
-	CreateUser(users *entity2.User) error
+	CreateUser(users *model.User) error
 
 	// PROFILE
-	ProfileUser(userId uint) (*entity2.ListUsers, error)
-	GetByID(userID uint) (*entity2.User, error)
-	GetUserByID(id uint) ([]entity2.User, error)
-	GetTaskByUserByID(userID uint, user *entity2.User) error
+	ProfileUser(userId uint) (*model.ListUsers, error)
+	GetByID(userID uint) (*model.User, error)
+	GetUserByID(id uint) ([]model.User, error)
+	GetTaskByUserByID(userID uint, user *model.User) error
 
-	CheckUsername(username string) (*entity2.UserLogin, error)
-	PaginatePegawaiUsers(users *[]entity2.User, perPage, offset int) error
+	CheckUsername(username string) (*model.UserLogin, error)
+	PaginatePegawaiUsers(users *[]model.User, perPage, offset int) error
 	// token
 	//UpdateUserToken(user *entity.User) error
 	AddValidToken(userID uint, token, refreshToken string) error
@@ -30,7 +30,7 @@ type UserRepository interface {
 	//Logout
 	DeleteUserToken(userID uint) error
 	// login
-	GetValidTokenByUserID(userID uint) (*entity2.ValidToken, error)
+	GetValidTokenByUserID(userID uint) (*model.ValidToken, error)
 	DeleteValidTokenByUserID(userID uint) error
 
 	//AddTokenToBlacklist(blacklistToken config.BlacklistToken)
@@ -39,7 +39,7 @@ type UserRepository interface {
 	StoreRefreshToken(userID uint, refreshToken string) error
 
 	// refresh token
-	GetUserByRefreshToken(refreshToken string) (*entity2.RefreshToken, error)
+	GetUserByRefreshToken(refreshToken string) (*model.RefreshToken, error)
 	UpdateAccessToken(userID uint, newAccessToken string) error
 
 	// view or page

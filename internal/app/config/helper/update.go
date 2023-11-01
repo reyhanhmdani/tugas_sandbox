@@ -1,11 +1,11 @@
 package helper
 
 import (
-	"testing_backend/internal/app/model/entity"
-	"testing_backend/internal/app/model/request"
+	"testing_backend/internal/app/model"
+	"testing_backend/util/request"
 )
 
-func UpdateTaskFields(task *entity.Tasks, updateData request.UpdateTask) {
+func UpdateTaskFields(task *model.Tasks, updateData request.UpdateTask) {
 	if updateData.Title != "" {
 		task.Title = updateData.Title
 	}

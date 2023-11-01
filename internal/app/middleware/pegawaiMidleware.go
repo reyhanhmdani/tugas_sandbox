@@ -6,8 +6,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"testing_backend/internal/app/config"
 	"testing_backend/internal/app/database"
-	"testing_backend/internal/app/model/entity"
-	"testing_backend/internal/app/model/respError"
+	"testing_backend/internal/app/model"
+	"testing_backend/util/respError"
 )
 
 func PegawaiMiddleware() fiber.Handler {
@@ -65,7 +65,7 @@ func PegawaiMiddleware() fiber.Handler {
 
 		// Cek apakah token ada di dalam tabel valid_token
 		userID := claims.UserID
-		validToken := &entity.ValidToken{}
+		validToken := &model.ValidToken{}
 		if err = db.Where("user_id = ? AND token = ?", userID, tokenString).First(&validToken).Error; err != nil {
 			return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized: Invalid or expired token")
 		}

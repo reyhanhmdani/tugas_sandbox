@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"os"
 	"testing_backend/internal/app/database"
+	"testing_backend/internal/app/repository/repo_IMPL"
 	"testing_backend/internal/app/route"
 	"testing_backend/internal/app/service"
 )
@@ -23,6 +24,7 @@ func main() {
 	logrus.SetLevel(logrus.InfoLevel)
 
 	loadEnv()
+	//viperEnv()
 
 	db, err := database.Db()
 	if err != nil {
@@ -35,8 +37,8 @@ func main() {
 		return
 	}
 
-	userRepo := database.NewUserRepository(db)
-	taskRepo := database.NewTaskRepository(db)
+	userRepo := repo_IMPL.NewUserRepository(db)
+	taskRepo := repo_IMPL.NewTaskRepository(db)
 	serviceHandler := service.NewSantriService(taskRepo, userRepo)
 	routeHandle := route.NewRoute(serviceHandler)
 	routeInit := routeHandle.RouteInit()
@@ -57,13 +59,34 @@ func loadEnv() {
 	// Mengambil nilai variabel lingkungan
 	dbHost := os.Getenv("DB_HOST")
 	dbRootPassword := os.Getenv("DB_PASS")
-	dbDatabase := os.Getenv("DB_NAME")
+	dbDatabase := os.Getenv("DB_SER")
 
 	// Contoh penggunaan nilai variabel lingkungan
 	logrus.Printf("DB Host: %s", dbHost)
 	logrus.Printf("DB Root Password: %s", dbRootPassword)
 	logrus.Printf("DB Database: %s", dbDatabase)
 }
+
+//func viperEnv() {
+//	config := viper.New()
+//	config.SetConfigFile("config.env")
+//	config.AddConfigPath(".")
+//
+//	err := config.ReadInConfig()
+//	if err != nil {
+//		log.Fatal("Error loading .env file")
+//	}
+//
+//	dbHost := config.GetString("DB_HOST")
+//	//dbName := config.GetString("DB_NAME")
+//	dbPassword := config.GetString("DB_PASS")
+//	//dbUser := config.GetString("DB_USER")
+//	dBPort := config.GetInt("DB_PORT")
+//
+//	logrus.Printf("DB Host: %s", dbHost)
+//	logrus.Printf("DB Port %d", dBPort)
+//	logrus.Printf("DB PAS: %s", dbPassword)
+//}
 
 //app := fiber.New()
 //

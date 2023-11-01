@@ -1,28 +1,28 @@
 package repository
 
 import (
-	"testing_backend/internal/app/model/entity"
+	"testing_backend/internal/app/model"
 )
 
 type TaskRepository interface {
-	AllUserTasks(userID uint, tasks *[]entity.Tasks, perPage, offset int) error
+	AllUserTasks(userID uint, tasks *[]model.Tasks, perPage, offset int) error
 
 	//ADMIN
-	CreateTask(task *entity.ListTaskforCreate) error
-	UpdateTask(task *entity.Tasks) error
-	GetTaskByID(taskID uint) (*entity.Tasks, error)
+	CreateTask(task *model.ListTaskforCreate) error
+	UpdateTask(task *model.Tasks) error
+	GetTaskByID(taskID uint) (*model.Tasks, error)
 
 	// detail
-	GetTasksByUserIDWithPage(userID uint, perPage, offset int) ([]entity.Tasks, error)
-	AllTasksDataWithPage(search string, perPage, offset int) ([]entity.Tasks, error)
+	GetTasksByUserIDWithPage(userID uint, perPage, offset int) ([]model.Tasks, error)
+	AllTasksDataWithPage(search string, perPage, offset int) ([]model.Tasks, error)
 	GetTotalTasks() (int64, error)
 	GetTotalTasksWithSearch(search string) (int64, error)
 
 	// other
 	GetRoleByID(userID uint) (string, error)
 	//search
-	SearchTasks(tasks *[]entity.Tasks, searchTerm string, perPage, offset int) error
-	SearchTasksForUser(tasks *[]entity.Tasks, userID uint, searchTerm string, perPage, offset int) error
+	SearchTasks(tasks *[]model.Tasks, searchTerm string, perPage, offset int) error
+	SearchTasksForUser(tasks *[]model.Tasks, userID uint, searchTerm string, perPage, offset int) error
 
 	// delete
 	//

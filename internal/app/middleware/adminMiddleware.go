@@ -7,8 +7,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"testing_backend/internal/app/config"
 	"testing_backend/internal/app/database"
-	entity2 "testing_backend/internal/app/model/entity"
-	"testing_backend/internal/app/model/respError"
+	token2 "testing_backend/internal/app/model"
+	"testing_backend/util/respError"
 )
 
 func AdminMiddleware() fiber.Handler {
@@ -72,27 +72,18 @@ func AdminMiddleware() fiber.Handler {
 
 		// Cek apakah token ada di dalam tabel valid_token
 		userID := claims.UserID
-		validToken := &entity2.ValidToken{}
+		validToken := &token2.ValidToken{}
 		if err = db.Where("user_id = ? AND token = ?", userID, tokenString).First(&validToken).Error; err != nil {
 			return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized: Invalid or expired token")
 
 		}
 
 		// Menetapkan data pengguna dari token ke dalam konteks
-		//ctx.Locals("username", claims.Username)
 		ctx.Locals("user_id", claims.UserID)
 		ctx.Locals("role", claims.Role) // Menambahkan data peran ke konteks
 
-		// Pengecekan peran admin
-		//logrus.Info("claims.Role: ", claims.Role)
-		//if claims.Role != "admin" {
-		//	return ctx.Status(fiber.StatusUnauthorized).JSON(respError.ErrorResponse{
-		//		Message: "Unauthorized: Only admin can access this endpoint",
-		//		Status:  fiber.StatusUnauthorized,
-		//	})
-		//}
-		//
-		var user entity2.User
+		////
+		var user token2.User
 		if err = db.Where("id = ?", userID).First(&user).Error; err != nil {
 			return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized: User not found")
 		}
@@ -113,3 +104,15 @@ func AdminMiddleware() fiber.Handler {
 		return ctx.Next()
 	}
 }
+
+// Pengecekan peran admin
+//logrus.Info("claims.Role: ", claims.Role)
+//if claims.Role != "admin" {
+//	return ctx.Status(fiber.StatusUnauthorized).JSON(respError.ErrorResponse{
+//		Message: "Unauthorized: Only admin can access this endpoint",
+//		Status:  fiber.StatusUnauthorized,
+//	})
+//}
+//
+
+//ctx.Locals("username", claims.Username)

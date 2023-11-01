@@ -17,3 +17,13 @@ type TaskWithUser struct {
 	Title    string `json:"title"`
 	// tambahkan atribut lain yang diperlukan
 }
+
+type PageList struct {
+	Message     string      `json:"message"`
+	Status      int         `json:"status"`
+	Data        interface{} `json:"data"`
+	Total       int         `json:"total"`
+	Page        int         `json:"page"`
+	PerPage     int         `json:"per_page"`
+	TotalSearch int         `json:"totalSearch"`
+}

@@ -1,9 +1,9 @@
-package database
+package repo_IMPL
 
 import (
 	"errors"
 	"gorm.io/gorm"
-	entity2 "testing_backend/internal/app/model/entity"
+	"testing_backend/internal/app/model"
 )
 
 type UserRepository struct {
@@ -16,15 +16,15 @@ func NewUserRepository(DB *gorm.DB) *UserRepository {
 	}
 }
 
-func (U *UserRepository) AllUsersData() ([]entity2.User, error) {
-	var users []entity2.User
+func (U *UserRepository) AllUsersData() ([]model.User, error) {
+	var users []model.User
 	if err := U.DB.Preload("Tasks").Find(&users).Error; err != nil {
 		return nil, err
 	}
 	return users, nil
 }
 
-func (U *UserRepository) CreateUser(users *entity2.User) error {
+func (U *UserRepository) CreateUser(users *model.User) error {
 	if err := U.DB.Create(&users).Error; err != nil {
 		return err
 	}
@@ -33,8 +33,8 @@ func (U *UserRepository) CreateUser(users *entity2.User) error {
 
 // PROFILE
 
-func (U *UserRepository) ProfileUser(userId uint) (*entity2.ListUsers, error) {
-	var profile entity2.ListUsers
+func (U *UserRepository) ProfileUser(userId uint) (*model.ListUsers, error) {
+	var profile model.ListUsers
 	if err := U.DB.Where("id = ?", userId).First(&profile).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil // Santri data not found for the user
@@ -44,16 +44,16 @@ func (U *UserRepository) ProfileUser(userId uint) (*entity2.ListUsers, error) {
 	return &profile, nil
 }
 
-func (U *UserRepository) GetByID(userID uint) (*entity2.User, error) {
-	var user entity2.User
+func (U *UserRepository) GetByID(userID uint) (*model.User, error) {
+	var user model.User
 	if err := U.DB.First(&user, userID).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
 }
 
-func (U *UserRepository) GetUserByID(id uint) ([]entity2.User, error) {
-	var users []entity2.User
+func (U *UserRepository) GetUserByID(id uint) ([]model.User, error) {
+	var users []model.User
 	err := U.DB.Where("id", id).Find(&users).Error
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (U *UserRepository) GetUserByID(id uint) ([]entity2.User, error) {
 	return users, nil
 }
 
-func (U *UserRepository) GetTaskByUserByID(userID uint, user *entity2.User) error {
+func (U *UserRepository) GetTaskByUserByID(userID uint, user *model.User) error {
 	err := U.DB.Where("id = ?", userID).First(user).Error
 	if err != nil {
 		return err
@@ -71,8 +71,8 @@ func (U *UserRepository) GetTaskByUserByID(userID uint, user *entity2.User) erro
 }
 
 // other
-func (U *UserRepository) CheckUsername(username string) (*entity2.UserLogin, error) {
-	var user entity2.UserLogin
+func (U *UserRepository) CheckUsername(username string) (*model.UserLogin, error) {
+	var user model.UserLogin
 	result := U.DB.Where("username = ?", username).First(&user)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -83,7 +83,7 @@ func (U *UserRepository) CheckUsername(username string) (*entity2.UserLogin, err
 	return &user, nil
 }
 
-func (U *UserRepository) PaginatePegawaiUsers(users *[]entity2.User, perPage, offset int) error {
+func (U *UserRepository) PaginatePegawaiUsers(users *[]model.User, perPage, offset int) error {
 	// Mencari pengguna dengan role pegawai berdasarkan halaman dan jumlah per halaman
 	err := U.DB.Where("role = ?", "pegawai").Offset(offset).Limit(perPage).Find(users).Error
 	if err != nil {
@@ -96,11 +96,11 @@ func (U *UserRepository) PaginatePegawaiUsers(users *[]entity2.User, perPage, of
 
 func (U *UserRepository) AddValidToken(userID uint, token, refreshToken string) error {
 	// Cek apakah token sudah ada dalam database
-	existingToken := entity2.ValidToken{}
+	existingToken := model.ValidToken{}
 	if err := U.DB.Where("user_id = ? AND token = ? AND refresh_token = ?", userID, token, refreshToken).First(&existingToken).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// Token tidak ada dalam database, tambahkan
-			newToken := entity2.ValidToken{
+			newToken := model.ValidToken{
 				UserID:       userID,
 				Token:        token,
 				RefreshToken: refreshToken,
@@ -119,7 +119,7 @@ func (U *UserRepository) AddValidToken(userID uint, token, refreshToken string) 
 // DELETE USER
 func (U *UserRepository) DeleteTasksByUserID(userID uint) error {
 	// Hapus semua tugas yang dimiliki oleh pengguna dengan ID yang diberikan
-	err := U.DB.Where("user_id = ?", userID).Delete(&entity2.Tasks{}).Error
+	err := U.DB.Where("user_id = ?", userID).Delete(&model.Tasks{}).Error
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func (U *UserRepository) DeleteTasksByUserID(userID uint) error {
 
 func (U *UserRepository) DeleteUser(userID uint) error {
 	// Hapus pengguna berdasarkan ID
-	err := U.DB.Where("id = ?", userID).Delete(&entity2.User{}).Error
+	err := U.DB.Where("id = ?", userID).Delete(&model.User{}).Error
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func (U *UserRepository) DeleteUser(userID uint) error {
 // Logout
 func (U *UserRepository) DeleteUserToken(userID uint) error {
 	// Hapus validToken berdasarkan userID dan token di dalam database menggunakan GORM
-	if err := U.DB.Where("user_id = ?", userID).Delete(entity2.ValidToken{}).Error; err != nil {
+	if err := U.DB.Where("user_id = ?", userID).Delete(model.ValidToken{}).Error; err != nil {
 		return err
 	}
 
@@ -146,8 +146,8 @@ func (U *UserRepository) DeleteUserToken(userID uint) error {
 }
 
 // login
-func (U *UserRepository) GetValidTokenByUserID(userID uint) (*entity2.ValidToken, error) {
-	validToken := &entity2.ValidToken{}
+func (U *UserRepository) GetValidTokenByUserID(userID uint) (*model.ValidToken, error) {
+	validToken := &model.ValidToken{}
 	if err := U.DB.Where("user_id = ?", userID).First(validToken).Error; err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (U *UserRepository) GetValidTokenByUserID(userID uint) (*entity2.ValidToken
 
 func (U *UserRepository) DeleteValidTokenByUserID(userID uint) error {
 	// Hapus token yang sesuai dengan ID pengguna dari tabel valid_tokens
-	if err := U.DB.Where("user_id = ?", userID).Delete(&entity2.ValidToken{}).Error; err != nil {
+	if err := U.DB.Where("user_id = ?", userID).Delete(&model.ValidToken{}).Error; err != nil {
 		return err
 	}
 
@@ -167,13 +167,13 @@ func (U *UserRepository) DeleteValidTokenByUserID(userID uint) error {
 // valid token
 func (U *UserRepository) StoreRefreshToken(userID uint, refreshToken string) error {
 	// Buat atau perbarui token penyegaran di dalam database
-	refresh := entity2.ValidToken{
+	refresh := model.ValidToken{
 		UserID:       userID,
 		RefreshToken: refreshToken,
 	}
 
 	// Cek apakah token penyegaran untuk pengguna tersebut sudah ada di database
-	var existingRefresh entity2.ValidToken
+	var existingRefresh model.ValidToken
 	result := U.DB.Where("user_id = ?", userID).First(&existingRefresh)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -200,8 +200,8 @@ func (U *UserRepository) StoreRefreshToken(userID uint, refreshToken string) err
 
 // refresh Token
 
-func (U *UserRepository) GetUserByRefreshToken(refreshToken string) (*entity2.RefreshToken, error) {
-	var user entity2.RefreshToken
+func (U *UserRepository) GetUserByRefreshToken(refreshToken string) (*model.RefreshToken, error) {
+	var user model.RefreshToken
 	if err := U.DB.Where("refresh_token = ?", refreshToken).First(&user).Error; err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func (U *UserRepository) GetUserByRefreshToken(refreshToken string) (*entity2.Re
 }
 
 func (U *UserRepository) UpdateAccessToken(userID uint, newAccessToken string) error {
-	return U.DB.Model(&entity2.ValidToken{}).Where("user_id = ?", userID).Update("token", newAccessToken).Error
+	return U.DB.Model(&model.ValidToken{}).Where("user_id = ?", userID).Update("token", newAccessToken).Error
 }
 
 //func (U *UserRepository)   {

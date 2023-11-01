@@ -21,6 +21,13 @@ func Db() (*gorm.DB, error) {
 	password := os.Getenv("DB_PASS")
 	dbName := os.Getenv("DB_NAME")
 	port := os.Getenv("DB_PORT")
+
+	//config := viper.New()
+	//host := config.GetString("DB_HOST")
+	//username := config.GetString("DB_USER")
+	//password := config.GetString("DB_PASS")
+	//dbName := config.GetString("DB_NAME")
+	//port := config.GetInt("DB_PORT")
 	//
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", host, username, password, dbName, port)
 

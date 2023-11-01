@@ -10,11 +10,12 @@ import (
 	"testing_backend/internal/app/config/generate"
 	helper2 "testing_backend/internal/app/config/helper"
 	"testing_backend/internal/app/middleware/validation"
-	entity2 "testing_backend/internal/app/model/entity"
-	request2 "testing_backend/internal/app/model/request"
-	"testing_backend/internal/app/model/respError"
-	response2 "testing_backend/internal/app/model/response"
+	task2 "testing_backend/internal/app/model"
 	repository2 "testing_backend/internal/app/repository"
+	"testing_backend/util/pageStructur"
+	"testing_backend/util/request"
+	"testing_backend/util/respError"
+	"testing_backend/util/response"
 	"time"
 )
 
@@ -30,52 +31,6 @@ func NewSantriService(taskRepository repository2.TaskRepository, userRepo reposi
 	}
 }
 
-// ADMIN
-// @Summary My Tasks
-// @Description Mengambil daftar tugas yang dimiliki oleh pengguna yang saat ini masuk
-// @Accept json
-// @Produce	json
-// @Security apikeyauth
-// @Param page query int false "Halaman tugas yang akan ditampilkan"
-// @Param perPage query int false "Jumlah item per halaman"
-// @Success 200 {object} []entity.Tasks
-// @Failure 400 {object} respError.ErrorResponse
-// @Failure 401 {object} respError.ErrorResponse
-// @Failure 500 {object} respError.ErrorResponse
-// @Router /user/myTask [get]
-// @Tags auth
-func (h *Handler) MyTask(ctx *fiber.Ctx) error {
-	user, err := h.UserRepository.GetByID(ctx.Locals("user_id").(uint))
-	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(&respError.ErrorResponse{
-			Message: err.Error(),
-			Status:  fiber.StatusInternalServerError,
-		})
-	}
-
-	_, perPage, offset, _, err := helper2.InitializeQueryParameters(ctx)
-	if err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(respError.ErrorResponse{
-			Message: "Invalid query parameters",
-			Status:  fiber.StatusBadRequest,
-		})
-	}
-
-	// Menghitung offset
-	//offset := (page - 1) * perPage
-
-	// Mengambil daftar tugas untuk pengguna tertentu berdasarkan halaman dan jumlah per halaman
-	var tasks []entity2.Tasks
-	if err := h.TaskRepository.AllUserTasks(user.ID, &tasks, perPage, offset); err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(&respError.ErrorResponse{
-			Message: err.Error(),
-			Status:  fiber.StatusInternalServerError,
-		})
-	}
-
-	return ctx.Status(fiber.StatusOK).JSON(tasks)
-}
-
 // @Summary Register a new user
 // @Description Register a new user
 // @ID register-user
@@ -87,7 +42,7 @@ func (h *Handler) MyTask(ctx *fiber.Ctx) error {
 // @Router /register [post]
 // @Tags task
 func (h *Handler) Register(ctx *fiber.Ctx) error {
-	userRequest := new(request2.CreateUser)
+	userRequest := new(request.CreateUser)
 
 	if err := ctx.BodyParser(userRequest); err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, err.Error())
@@ -114,7 +69,7 @@ func (h *Handler) Register(ctx *fiber.Ctx) error {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
 	}
 
-	newUser := &entity2.User{
+	newUser := &task2.User{
 		Username: userRequest.Username,
 		Password: string(hashedPassword),
 		//PasswordConfirm: string(hashedPassword),
@@ -127,7 +82,7 @@ func (h *Handler) Register(ctx *fiber.Ctx) error {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
 	}
 
-	return ctx.Status(fiber.StatusCreated).JSON(&response2.SuccessMessageCreate{
+	return ctx.Status(fiber.StatusCreated).JSON(&response.SuccessMessageCreate{
 		Status:  fiber.StatusCreated,
 		Message: "Success Created User",
 		Data:    newUser,
@@ -145,7 +100,7 @@ func (h *Handler) Register(ctx *fiber.Ctx) error {
 // @Router /login [post]
 // @Tags auth
 func (h *Handler) Login(ctx *fiber.Ctx) error {
-	var userLogin request2.UserLogin
+	var userLogin request.UserLogin
 
 	if err := ctx.BodyParser(&userLogin); err != nil {
 		logrus.Error(err)
@@ -161,7 +116,7 @@ func (h *Handler) Login(ctx *fiber.Ctx) error {
 	checkUser, err := h.UserRepository.CheckUsername(userLogin.Username)
 	if err != nil || checkUser == nil {
 		return respError.ErrResponse(ctx, fiber.StatusNotFound, "user not found")
-
+		//return ctx.Status(fiber.StatusNotFound).SendString("user not found")
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(checkUser.Password), []byte(userLogin.Password))
@@ -206,7 +161,7 @@ func (h *Handler) Login(ctx *fiber.Ctx) error {
 		ctx.Cookie(&cookie)
 	}
 
-	rsp := response2.LoginResponse{
+	rsp := response.LoginResponse{
 		ID: checkUser.ID,
 		Message: fmt.Sprintf("Hello %s! You are%s logged in.", checkUser.Username, func() string {
 			if isAdmin {
@@ -218,7 +173,7 @@ func (h *Handler) Login(ctx *fiber.Ctx) error {
 		Refresh: refreshToken,
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(response2.SuccessMessage{
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
 		Message: "Success Log in",
 		Status:  fiber.StatusOK,
 		Data:    rsp,
@@ -253,7 +208,7 @@ func (h *Handler) Profile(ctx *fiber.Ctx) error {
 		return respError.ErrResponse(ctx, fiber.StatusNotFound, err.Error())
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(&response2.SuccessMessage{
+	return ctx.Status(fiber.StatusOK).JSON(&response.SuccessMessage{
 		Message: "Success untuk melihat My PRofile",
 		Status:  fiber.StatusOK,
 		Data:    profile,
@@ -316,7 +271,7 @@ func (h *Handler) CreateTaskAdmin(ctx *fiber.Ctx) error {
 	}
 
 	// Parsing data tugas
-	taskRequest := new(request2.CreateTask)
+	taskRequest := new(request.CreateTask)
 	if err := ctx.BodyParser(&taskRequest); err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, err.Error())
 	}
@@ -326,7 +281,7 @@ func (h *Handler) CreateTaskAdmin(ctx *fiber.Ctx) error {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, err.Error())
 	}
 
-	task := &entity2.ListTaskforCreate{
+	task := &task2.ListTaskforCreate{
 		UserID:      userIdInt64,
 		Title:       taskRequest.Title,
 		Description: taskRequest.Description,
@@ -338,7 +293,7 @@ func (h *Handler) CreateTaskAdmin(ctx *fiber.Ctx) error {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
 	}
 
-	return ctx.Status(fiber.StatusCreated).JSON(response2.SuccessMessage{
+	return ctx.Status(fiber.StatusCreated).JSON(response.SuccessMessage{
 		Message: "Success Create",
 		Status:  fiber.StatusCreated,
 		Data:    task,
@@ -366,7 +321,7 @@ func (h *Handler) CreateTaskForPegawai(ctx *fiber.Ctx) error {
 	}
 
 	userRole := ctx.Locals("role").(string)
-	taskRequest := new(request2.CreateTask)
+	taskRequest := new(request.CreateTask)
 	if err := ctx.BodyParser(&taskRequest); err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, err.Error())
 	}
@@ -388,7 +343,7 @@ func (h *Handler) CreateTaskForPegawai(ctx *fiber.Ctx) error {
 		return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized: Admin cannot create tasks for other admins")
 	}
 
-	task := &entity2.ListTaskforCreate{
+	task := &task2.ListTaskforCreate{
 		UserID:      uint(pegawaiID), // Menggunakan nilai yang sesuai
 		Title:       taskRequest.Title,
 		Description: taskRequest.Description,
@@ -401,7 +356,7 @@ func (h *Handler) CreateTaskForPegawai(ctx *fiber.Ctx) error {
 
 	}
 
-	return ctx.Status(fiber.StatusCreated).JSON(response2.SuccessMessage{
+	return ctx.Status(fiber.StatusCreated).JSON(response.SuccessMessage{
 		Message: "Success Create",
 		Status:  fiber.StatusCreated,
 		Data:    task,
@@ -433,7 +388,7 @@ func (h *Handler) UpdateTaskAdmin(ctx *fiber.Ctx) error {
 	}
 
 	// Parsing data tugas
-	taskRequest := new(request2.UpdateTask)
+	taskRequest := new(request.UpdateTask)
 	if err := ctx.BodyParser(&taskRequest); err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, err.Error())
 	}
@@ -461,7 +416,7 @@ func (h *Handler) UpdateTaskAdmin(ctx *fiber.Ctx) error {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(response2.SuccessMessage{
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
 		Message: "Success Update",
 		Status:  fiber.StatusOK,
 		Data:    task,
@@ -500,7 +455,7 @@ func (h *Handler) UpdateTaskPegawai(ctx *fiber.Ctx) error {
 
 	userRole := ctx.Locals("role").(string)
 	// Parsing data tugas
-	taskRequest := new(request2.UpdateTask)
+	taskRequest := new(request.UpdateTask)
 	if err := ctx.BodyParser(&taskRequest); err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, err.Error())
 	}
@@ -535,7 +490,7 @@ func (h *Handler) UpdateTaskPegawai(ctx *fiber.Ctx) error {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(response2.SuccessMessage{
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
 		Message: "Success Update",
 		Status:  fiber.StatusOK,
 		Data:    task,
@@ -567,7 +522,7 @@ func (h *Handler) ViewUserById(ctx *fiber.Ctx) error {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(response2.SuccessMessage{
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
 		Message: "Search Result",
 		Status:  fiber.StatusOK,
 		Data:    user,
@@ -610,7 +565,7 @@ func (h *Handler) ViewTasksByUser(ctx *fiber.Ctx) error {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(response2.SuccessMessage{
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
 		Message: "Success Search task By user",
 		Status:  fiber.StatusOK,
 		Data:    tasks,
@@ -659,7 +614,7 @@ func (h *Handler) ViewUserOrTaskByID(ctx *fiber.Ctx) error {
 	// Pastikan pengguna memiliki izin untuk melihat tugas pengguna ini (contoh: admin dapat melihat tugas pengguna apa pun).
 
 	// Dapatkan detail pengguna berdasarkan ID pengguna
-	var user *entity2.User
+	var user *task2.User
 	if userIDParam != "" {
 		// Dapatkan detail pengguna berdasarkan ID pengguna
 		user, err = h.UserRepository.GetByID(uint(userID))
@@ -668,7 +623,7 @@ func (h *Handler) ViewUserOrTaskByID(ctx *fiber.Ctx) error {
 		}
 	}
 
-	var task *entity2.Tasks
+	var task *task2.Tasks
 	if taskIDParam != "" {
 		// Dapatkan detail tugas berdasarkan ID tugas
 		task, err = h.TaskRepository.GetTaskByID(uint(taskID))
@@ -681,7 +636,7 @@ func (h *Handler) ViewUserOrTaskByID(ctx *fiber.Ctx) error {
 
 	// Kembalikan detail pengguna dan tugas sebagai respons
 	responseData := map[string]interface{}{"user": user, "task": task}
-	return ctx.Status(fiber.StatusOK).JSON(response2.SuccessMessage{
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
 		Message: "Search Result",
 		Status:  fiber.StatusOK,
 		Data:    responseData,
@@ -722,7 +677,7 @@ func (h *Handler) ViewTaskByID(ctx *fiber.Ctx) error {
 	// Pastikan bahwa pengguna memiliki akses ke tugas ini (contoh: pengguna adalah pemilik tugas).
 
 	// Kembalikan detail tugas sebagai respons
-	return ctx.Status(fiber.StatusOK).JSON(response2.SuccessMessage{
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
 		Message: "Search Result",
 		Status:  fiber.StatusOK,
 		Data:    task,
@@ -830,10 +785,62 @@ func (h *Handler) DeleteTaskForAdmin(ctx *fiber.Ctx) error {
 
 // search pagination
 
+// ADMIN
+// @Summary My Tasks
+// @Description Mengambil daftar tugas yang dimiliki oleh pengguna yang saat ini masuk
+// @Accept json
+// @Produce	json
+// @Security apikeyauth
+// @Param page query int false "Halaman tugas yang akan ditampilkan"
+// @Param perPage query int false "Jumlah item per halaman"
+// @Success 200 {object} response.SuccessMessage
+// @Failure 400 {object} respError.ErrorResponse
+// @Failure 401 {object} respError.ErrorResponse
+// @Failure 500 {object} respError.ErrorResponse
+// @Router /user/myTask [get]
+// @Tags auth
+func (h *Handler) MyTask(ctx *fiber.Ctx) error {
+	user, err := h.UserRepository.GetByID(ctx.Locals("user_id").(uint))
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).SendString(err.Error())
+	}
+
+	_, perPage, offset, _, err := helper2.InitializeQueryParameters(ctx)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).SendString("Invalid query parameters")
+	}
+
+	// Mengambil daftar tugas untuk pengguna tertentu berdasarkan halaman dan jumlah per halaman
+	var tasks []task2.Tasks
+	if err := h.TaskRepository.AllUserTasks(user.ID, &tasks, perPage, offset); err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(&respError.ErrorResponse{
+			Message: err.Error(),
+			Status:  fiber.StatusInternalServerError,
+		})
+	}
+
+	// Membuat slice ResponseTask
+	taskResponses := make([]task2.ResponseTask, len(tasks))
+	for i, task := range tasks {
+		taskResponses[i] = task2.ResponseTask{
+			ID:          task.Id,
+			Title:       task.Title,
+			Description: task.Description,
+			UserID:      task.UserID,
+			Username:    user.Username, // Menggunakan username dari objek user
+		}
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(&response.SuccessMessage{
+		Message: "Success get your task",
+		Status:  fiber.StatusOK,
+		Data:    taskResponses,
+	})
+}
+
 // @Summary View all users
 // @Description View all users with pagination
 // @ID view-all-users
-
 // @Param page query int false "Nomor halaman (default: 1)"
 // @Param perPage query int false "Jumlah item per halaman (default: 5)"
 // @Accept json
@@ -852,12 +859,12 @@ func (h *Handler) ViewAllUsers(ctx *fiber.Ctx) error {
 	//offset := (page - 1) * perPage
 
 	// Mengambil daftar pengguna dengan role "pegawai" berdasarkan halaman dan jumlah per halaman
-	var users []entity2.User
+	var users []task2.User
 	if err := h.UserRepository.PaginatePegawaiUsers(&users, perPage, offset); err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(response2.SuccessMessage{
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
 		Message: "Success Mendapatkan List Pegawai",
 		Status:  fiber.StatusOK,
 		Data:    users,
@@ -893,7 +900,7 @@ func (h *Handler) ViewAllTask(ctx *fiber.Ctx) error {
 	var totalTasks int64
 	var totalSearch int64
 
-	var tasks []entity2.Tasks
+	var tasks []task2.Tasks
 	var err error
 
 	//// Cek apakah parameter `page` telah diberikan dalam query
@@ -920,20 +927,13 @@ func (h *Handler) ViewAllTask(ctx *fiber.Ctx) error {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, "Failed to retrieve tasks")
 	}
 
-	var taskResponses []entity2.TaskResponse
+	var taskResponses []task2.ResponseTask
 
 	// Loop through the tasks and fetch usernames
 	for _, task := range tasks {
-		var user entity2.User
+		var user task2.User
 		if err := h.UserRepository.GetTaskByUserByID(task.UserID, &user); err == nil {
-			// Create a TaskResponse item with the username
-			taskResponse := entity2.TaskResponse{
-				ID:          task.Id,
-				Title:       task.Title,
-				Description: task.Description,
-				UserID:      task.UserID,
-				Username:    user.Username,
-			}
+			taskResponse := helper2.CreateTaskResponse(task, user)
 			// Append the item to the response slice
 			taskResponses = append(taskResponses, taskResponse)
 		}
@@ -952,7 +952,7 @@ func (h *Handler) ViewAllTask(ctx *fiber.Ctx) error {
 
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(response2.PageList{
+	return ctx.Status(fiber.StatusOK).JSON(pageStructur.PageList{
 		Message:     "All tasks data",
 		Status:      fiber.StatusOK,
 		Data:        taskResponses,
@@ -966,7 +966,7 @@ func (h *Handler) ViewAllTask(ctx *fiber.Ctx) error {
 // search
 // SearchTasks pencarian tugas (optional) => berdasarkan role juga bisa,
 // @Summary Search for tasks
-// @Description admin bisa mencari semua task, sedangkan pegawai hanya bisa mencari task yang di miliki oleh pegawai pegawai
+// @Description admin bisa mencari semua task, sedangkan pegawai hanya bisa mencari task yang di miliki oleh pegawai
 // @ID search-tasks
 // @Accept json
 // @Produce json
@@ -985,7 +985,7 @@ func (h *Handler) Search(ctx *fiber.Ctx) error {
 	//searchTerm := ctx.Query("search")
 
 	// Inisialisasi variabel untuk hasil pencarian
-	var tasks []entity2.Tasks
+	var tasks []task2.Tasks
 
 	//// Periksa apakah kata kunci pencarian ada
 	//if searchTerm == "" {
@@ -1023,7 +1023,7 @@ func (h *Handler) Search(ctx *fiber.Ctx) error {
 	}
 
 	// Mengembalikan hasil pencarian
-	return ctx.Status(fiber.StatusOK).JSON(response2.SuccessMessage{
+	return ctx.Status(fiber.StatusOK).JSON(response.SuccessMessage{
 		Message: "Search results",
 		Status:  fiber.StatusOK,
 		Data:    tasks,
@@ -1064,7 +1064,7 @@ func (h *Handler) RefreshTokenHandler(ctx *fiber.Ctx) error {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, "Failed to update access token")
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(&response2.TokenResponse{
+	return ctx.Status(fiber.StatusOK).JSON(&response.TokenResponse{
 		Message:     "Success get new access-token",
 		Status:      fiber.StatusOK,
 		AccessToken: newAccessToken,

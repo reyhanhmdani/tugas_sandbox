@@ -19,7 +19,6 @@ func InitializeQueryParameters(ctx *fiber.Ctx) (int, int, int, string, error) {
 
 	page := query.Page
 	search := query.Search
-	offset := int(query.Offset)
 
 	// Check if the `page` parameter has been provided in the query
 	if page <= 0 {
@@ -33,7 +32,7 @@ func InitializeQueryParameters(ctx *fiber.Ctx) (int, int, int, string, error) {
 		perPage = 10
 	}
 
-	offset = perPage * (page - 1)
+	offset := perPage * (page - 1)
 
 	return page, perPage, offset, search, nil
 }

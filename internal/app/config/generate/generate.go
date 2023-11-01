@@ -4,16 +4,16 @@ import (
 	"errors"
 	"testing_backend/internal/app/config"
 	"testing_backend/internal/app/database"
-	"testing_backend/internal/app/model/entity"
+	"testing_backend/internal/app/model"
 )
 
-func GenerateNewAccessToken(refreshToken string, role string, user *entity.RefreshToken) (string, string, error) {
+func GenerateNewAccessToken(refreshToken string, role string, user *model.RefreshToken) (string, string, error) {
 	//var userLogin request.UserLogin
 
 	db, _ := database.Db()
 
 	// Contoh validasi menggunakan GORM:
-	var validRefreshToken entity.GenerateRefreshToken
+	var validRefreshToken model.GenerateRefreshToken
 	if err := db.Where("id = ? AND refresh_token = ?", user.ID, refreshToken).First(&validRefreshToken).Error; err != nil {
 		return "", "", errors.New("Invalid refresh token")
 	}
