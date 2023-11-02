@@ -885,35 +885,12 @@ func (h *Handler) ViewAllUsers(ctx *fiber.Ctx) error {
 // @Router /admin/allTasks [get]
 // @Tags auth
 func (h *Handler) ViewAllTask(ctx *fiber.Ctx) error {
-	//var query pageStructur.PageStructur
-	//if err := ctx.QueryParser(&query); err != nil {
-	//	return ctx.Status(fiber.StatusBadRequest).JSON(respError.ErrorResponse{
-	//		Message: "Invalid query parameters",
-	//		Status:  fiber.StatusBadRequest,
-	//	})
-	//}
-	//
-	//page := query.Page
-	//search := query.Search
-
 	// Inisialisasi variabel untuk total data tugas dan total pencarian
 	var totalTasks int64
 	var totalSearch int64
 
 	var tasks []task2.Tasks
 	var err error
-
-	//// Cek apakah parameter `page` telah diberikan dalam query
-	//if page <= 0 {
-	//	// Jika tidak ada atau nilai yang tidak valid, ubah page menjadi 1
-	//	page = 1
-	//}
-	//
-	//perPage := query.PerPage
-	//if perPage <= 0 {
-	//	// Jika `perPage` tidak ada atau nilai yang tidak valid, ubah perPage menjadi 10 (default)
-	//	perPage = 10
-	//}
 
 	page, perPage, offset, search, err := helper2.InitializeQueryParameters(ctx)
 	if err != nil {
