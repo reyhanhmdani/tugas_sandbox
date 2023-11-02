@@ -52,7 +52,6 @@ func (rtr *Route) RouteInit() *fiber.App {
 		// detail para pegawai
 		admin.Get("/user-detail/:id", rtr.usersService.ViewUserById)
 		admin.Get("/user-tasks/:userID", rtr.usersService.ViewTasksByUser)
-		// detail task para pegawai, pilih id pegawai nya baru pilih id task nya
 		admin.Get("/user-or-task-details", rtr.usersService.ViewUserOrTaskByID)
 		// detail semua tasks
 		admin.Get("/allTasks", rtr.usersService.ViewAllTask)
@@ -73,7 +72,7 @@ func (rtr *Route) RouteInit() *fiber.App {
 
 		// detail
 		// melihat rincian task
-		user.Get("/detailTask/:idtask", rtr.usersService.ViewTaskByID)
+		user.Get("/detail-task/:idtask", rtr.usersService.ViewTaskByID)
 
 		user.Get("/search", rtr.usersService.Search)
 
