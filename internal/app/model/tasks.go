@@ -1,10 +1,12 @@
 package model
 
+import "github.com/google/uuid"
+
 type Tasks struct {
-	Id          uint   `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	UserID      uint   `json:"user_id"`
+	ID          uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	UserID      uuid.UUID `json:"user_id"`
 }
 
 func (Tasks) TableName() string {
@@ -12,18 +14,18 @@ func (Tasks) TableName() string {
 }
 
 type ResponseTask struct {
-	ID          uint   `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	UserID      uint   `json:"user_id"`
-	Username    string `json:"username"`
+	ID          uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	UserID      uuid.UUID `json:"user_id"`
+	Username    string    `json:"username"`
 }
 
 type ListTaskforCreate struct {
-	Id          uint   `json:"id"`
-	UserID      uint   `json:"user_id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
+	ID          uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey" json:"id"`
+	UserID      uuid.UUID `json:"user_id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
 }
 
 func (ListTaskforCreate) TableName() string {

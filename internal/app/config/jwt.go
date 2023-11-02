@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/dgrijalva/jwt-go"
+	"github.com/google/uuid"
 	"os"
 	"time"
 )
@@ -9,13 +10,13 @@ import (
 var JwtKey = []byte(os.Getenv("JWT_KEY"))
 
 type Claims struct {
-	UserID uint   `json:"user_id"`
-	Role   string `json:"role"`
+	UserID uuid.UUID `json:"user_id"`
+	Role   string    `json:"role"`
 	jwt.StandardClaims
 }
 
 // Membuat token JWT
-func CreateJWTToken(userID uint, role string, rememberMe bool) (string, string, error) {
+func CreateJWTToken(userID uuid.UUID, role string, rememberMe bool) (string, string, error) {
 	// Set masa berlaku access token (misalnya, 1 jam)
 	accessTokenExpiration := time.Now().Add(60 * time.Minute)
 	accessTokenClaims := &Claims{

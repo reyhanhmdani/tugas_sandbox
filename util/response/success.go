@@ -1,5 +1,7 @@
 package response
 
+import "github.com/google/uuid"
+
 // createUser
 type SuccessMessageCreate struct {
 	Status  int         `json:"status"`
@@ -15,9 +17,9 @@ type SuccessMessageLogin struct {
 
 // respon after login
 type LoginResponse struct {
-	ID      uint   `json:"id"`
-	Message string `json:"message"`
-	Token   string `json:"token"`
-	Refresh string `json:"refresh_token"`
-	Admin   bool   `json:"-"`
+	ID      uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	Message string    `json:"message"`
+	Token   string    `json:"token"`
+	Refresh string    `json:"refresh_token"`
+	Admin   bool      `json:"-"`
 }

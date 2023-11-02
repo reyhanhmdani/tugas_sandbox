@@ -1,12 +1,16 @@
 package model
 
-import "time"
+import (
+	"github.com/google/uuid"
+
+	"time"
+)
 
 type ValidToken struct {
-	ID           uint   `gorm:"primaryKey"`
-	Token        string `gorm:"not null"`
-	RefreshToken string `gorm:"not null"`
-	UserID       uint   `gorm:"not null"`
+	ID           uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	Token        string    `gorm:"not null"`
+	RefreshToken string    `gorm:"not null"`
+	UserID       uuid.UUID `gorm:"not null"`
 	CreatedAt    time.Time
 }
 
@@ -15,9 +19,9 @@ func (ValidToken) TableName() string {
 }
 
 type GenerateRefreshToken struct {
-	ID     uint   `json:"id"`
-	UserID uint   `json:"user_id"`
-	Role   string `json:"role"`
+	ID     uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	UserID uuid.UUID `json:"user_id"`
+	Role   string    `json:"role"`
 }
 
 func (GenerateRefreshToken) TableName() string {
@@ -25,10 +29,10 @@ func (GenerateRefreshToken) TableName() string {
 }
 
 type RefreshToken struct {
-	ID           uint   `gorm:"primaryKey" json:"id"`
-	RefreshToken string `json:"refresh_token"`
-	Role         string `json:"role"`
-	UserID       uint   `json:"user_id"`
+	ID           uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	RefreshToken string    `json:"refresh_token"`
+	Role         string    `json:"role"`
+	UserID       uuid.UUID `json:"user_id"`
 }
 
 func (RefreshToken) TableName() string {

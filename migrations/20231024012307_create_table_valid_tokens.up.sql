@@ -1,8 +1,8 @@
 CREATE TABLE valid_tokens
 (
-    id         SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     token      VARCHAR(255) NOT NULL,
     refresh_token VARCHAR(255),
-    user_id INT NOT NULL REFERENCES Users (id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES Users (id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 )

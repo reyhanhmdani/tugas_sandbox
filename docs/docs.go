@@ -60,7 +60,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/entity.Tasks"
+                                "$ref": "#/definitions/model.Tasks"
                             }
                         }
                     },
@@ -79,71 +79,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/create-task/{id}": {
-            "post": {
-                "security": [
-                    {
-                        "apikeyauth": []
-                    }
-                ],
-                "description": "Membuat tugas oleh admin untuk pegawai",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "task"
-                ],
-                "summary": "Create Task for Pegawai",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID Pegawai",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Data tugas yang akan dibuat",
-                        "name": "taskRequest",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.CreateTask"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/entity.Tasks"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/crete-task": {
+        "/admin/create-task": {
             "post": {
                 "security": [
                     {
@@ -177,8 +113,72 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/entity.Tasks"
+                                "$ref": "#/definitions/model.Tasks"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/create-task/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "apikeyauth": []
+                    }
+                ],
+                "description": "Membuat tugas oleh admin untuk pegawai",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "Create Task for Pegawai",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID Pegawai",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Data tugas yang akan dibuat",
+                        "name": "taskRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.CreateTask"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/model.Tasks"
                         }
                     },
                     "400": {
@@ -222,14 +222,14 @@ const docTemplate = `{
                 "summary": "Delete Task for Admin",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID Pengguna",
                         "name": "userId",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID Tugas",
                         "name": "taskId",
                         "in": "path",
@@ -284,7 +284,7 @@ const docTemplate = `{
                 "summary": "Delete User",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID Pengguna",
                         "name": "userId",
                         "in": "path",
@@ -351,7 +351,7 @@ const docTemplate = `{
                 "summary": "Update Task for Admin",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID Tugas",
                         "name": "taskID",
                         "in": "path",
@@ -371,7 +371,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/entity.Tasks"
+                            "$ref": "#/definitions/model.Tasks"
                         }
                     },
                     "400": {
@@ -421,14 +421,14 @@ const docTemplate = `{
                 "summary": "Update Task by Pegawai",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID Pengguna",
                         "name": "userID",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID Tugas",
                         "name": "taskID",
                         "in": "path",
@@ -448,7 +448,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/entity.Tasks"
+                            "$ref": "#/definitions/model.Tasks"
                         }
                     },
                     "400": {
@@ -498,7 +498,7 @@ const docTemplate = `{
                 "summary": "View Tasks By User",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID Pengguna",
                         "name": "userID",
                         "in": "path",
@@ -511,7 +511,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/entity.User"
+                                "$ref": "#/definitions/model.User"
                             }
                         }
                     },
@@ -611,7 +611,7 @@ const docTemplate = `{
                 "summary": "View Tasks By User",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID Pengguna",
                         "name": "userID",
                         "in": "path",
@@ -636,7 +636,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/entity.Tasks"
+                                "$ref": "#/definitions/model.Tasks"
                             }
                         }
                     },
@@ -657,6 +657,7 @@ const docTemplate = `{
         },
         "/allusers": {
             "get": {
+                "description": "View all users with pagination",
                 "consumes": [
                     "application/json"
                 ],
@@ -666,6 +667,8 @@ const docTemplate = `{
                 "tags": [
                     "other"
                 ],
+                "summary": "View all users",
+                "operationId": "view-all-users",
                 "parameters": [
                     {
                         "type": "integer",
@@ -686,7 +689,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/entity.User"
+                                "$ref": "#/definitions/model.User"
                             }
                         }
                     },
@@ -805,7 +808,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "task"
+                    "auth"
                 ],
                 "summary": "Register a new user",
                 "operationId": "register-user",
@@ -873,7 +876,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/entity.Tasks"
+                            "$ref": "#/definitions/model.Tasks"
                         }
                     },
                     "400": {
@@ -920,7 +923,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/entity.ListUsers"
+                                "$ref": "#/definitions/model.ListUsers"
                             }
                         }
                     },
@@ -981,10 +984,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entity.Tasks"
-                            }
+                            "$ref": "#/definitions/response.SuccessMessage"
                         }
                     },
                     "400": {
@@ -1032,7 +1032,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/entity.ListUsers"
+                                "$ref": "#/definitions/model.ListUsers"
                             }
                         }
                     },
@@ -1058,7 +1058,7 @@ const docTemplate = `{
                         "apikeyauth": []
                     }
                 ],
-                "description": "admin bisa mencari semua task, sedangkan pegawai hanya bisa mencari task yang di miliki oleh pegawai pegawai",
+                "description": "admin bisa mencari semua task, sedangkan pegawai hanya bisa mencari task yang di miliki oleh pegawai",
                 "consumes": [
                     "application/json"
                 ],
@@ -1097,7 +1097,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/entity.Tasks"
+                                "$ref": "#/definitions/model.Tasks"
                             }
                         }
                     },
@@ -1124,7 +1124,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "entity.ListUsers": {
+        "model.ListUsers": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -1138,34 +1138,31 @@ const docTemplate = `{
                 }
             }
         },
-        "entity.Tasks": {
+        "model.Tasks": {
             "type": "object",
             "properties": {
                 "description": {
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "title": {
                     "type": "string"
                 },
-                "user": {
-                    "$ref": "#/definitions/entity.User"
-                },
                 "user_id": {
-                    "type": "integer"
+                    "type": "string"
                 }
             }
         },
-        "entity.User": {
+        "model.User": {
             "type": "object",
             "properties": {
                 "createdAt": {
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "password": {
                     "type": "string"
@@ -1257,7 +1254,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "message": {
                     "type": "string"

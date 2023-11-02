@@ -59,9 +59,9 @@ func (rtr *Route) RouteInit() *fiber.App {
 
 		// DELETE
 		// menghapus user pegawai (task nya ikut kehapus semua yang dimiliki pegawai nya)
-		admin.Delete("/delete-user/:userId", rtr.usersService.DeleteUser)
+		admin.Delete("/delete-user", rtr.usersService.DeleteUser)
 		// menghapus task pegawai, pilih id pegawai nya baru pilih id task nya
-		admin.Delete("/delete-task/:userId/:taskId", rtr.usersService.DeleteTaskForAdmin)
+		admin.Delete("/delete-task", rtr.usersService.DeleteTaskForAdmin)
 	}
 
 	// ini bisa di akses sesudah login (all role)

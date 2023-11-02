@@ -3,9 +3,9 @@ package service
 import (
 	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
-	"strconv"
 	config2 "testing_backend/internal/app/config"
 	"testing_backend/internal/app/config/generate"
 	helper2 "testing_backend/internal/app/config/helper"
@@ -40,7 +40,7 @@ func NewSantriService(taskRepository repository2.TaskRepository, userRepo reposi
 // @Success 201 {object} response.SuccessMessageCreate "Success Created User"
 // @Failure 400,500 {object} respError.ErrorResponse
 // @Router /register [post]
-// @Tags task
+// @Tags auth
 func (h *Handler) Register(ctx *fiber.Ctx) error {
 	userRequest := new(request.CreateUser)
 
@@ -72,8 +72,7 @@ func (h *Handler) Register(ctx *fiber.Ctx) error {
 	newUser := &task2.User{
 		Username: userRequest.Username,
 		Password: string(hashedPassword),
-		//PasswordConfirm: string(hashedPassword),
-		Role: userRequest.Role,
+		Role:     userRequest.Role,
 	}
 
 	err = h.UserRepository.CreateUser(newUser)
@@ -185,24 +184,18 @@ func (h *Handler) Login(ctx *fiber.Ctx) error {
 // @Accept json
 // @Produce	json
 // @Security apikeyauth
-// @Success 200 {object} []entity.ListUsers
+// @Success 200 {object} []model.ListUsers
 // @Failure 400 {object} respError.ErrorResponse
 // @Failure 401 {object} respError.ErrorResponse
 // @Router /user/profile [get]
 // @Tags auth
 func (h *Handler) Profile(ctx *fiber.Ctx) error {
-	userID := ctx.Locals("user_id")
-	if userID == nil {
-		return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "User not authenticated")
+	userID, err := helper2.GetUserIDFromContext(ctx)
+	if err != nil {
+		return respError.ErrResponse(ctx, fiber.StatusUnauthorized, err.Error())
 	}
 
-	userIdUint, ok := userID.(uint)
-	if !ok {
-		logrus.Info(userIdUint)
-		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "invalid user_id")
-	}
-
-	profile, err := h.UserRepository.ProfileUser(userIdUint)
+	profile, err := h.UserRepository.ProfileUser(userID)
 	if err != nil {
 		logrus.Error("profilenya ga nemu")
 		return respError.ErrResponse(ctx, fiber.StatusNotFound, err.Error())
@@ -219,25 +212,20 @@ func (h *Handler) Profile(ctx *fiber.Ctx) error {
 // @Accept json
 // @Produce	json
 // @Security apikeyauth
-// @Success 200 {object} []entity.ListUsers
+// @Success 200 {object} []model.ListUsers
 // @Failure 400 {object} respError.ErrorResponse
 // @Failure 401 {object} respError.ErrorResponse
 // @Failure 500 {object} respError.ErrorResponse
 // @Router /user/logout [post]
 // @Tags auth
 func (h *Handler) Logout(ctx *fiber.Ctx) error {
-	userID := ctx.Locals("user_id")
-	if userID == nil {
-		return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "User not authenticated")
-	}
-
-	userIdInt64, ok := userID.(uint)
-	if !ok {
-		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "invalid user_id")
+	userID, err := helper2.GetUserIDFromContext(ctx)
+	if err != nil {
+		return respError.ErrResponse(ctx, fiber.StatusUnauthorized, err.Error())
 	}
 
 	// Hapus token terkait dengan pengguna
-	err := h.UserRepository.DeleteUserToken(userIdInt64)
+	err = h.UserRepository.DeleteUserToken(userID)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
 	}
@@ -253,21 +241,16 @@ func (h *Handler) Logout(ctx *fiber.Ctx) error {
 // @Produce	json
 // @Param userLogin body request.CreateTask true "pembuatan tasks"
 // @Security apikeyauth
-// @Success 200 {object} []entity.Tasks
+// @Success 200 {object} []model.Tasks
 // @Failure 400 {object} respError.ErrorResponse
 // @Failure 401 {object} respError.ErrorResponse
 // @Failure 500 {object} respError.ErrorResponse
-// @Router /admin/crete-task [post]
+// @Router /admin/create-task [post]
 // @Tags task
 func (h *Handler) CreateTaskAdmin(ctx *fiber.Ctx) error {
-	userID := ctx.Locals("user_id")
-	if userID == nil {
-		return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "User not authenticated")
-	}
-
-	userIdInt64, ok := userID.(uint)
-	if !ok {
-		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid user_id")
+	userID, err := helper2.GetUserIDFromContext(ctx)
+	if err != nil {
+		return respError.ErrResponse(ctx, fiber.StatusUnauthorized, err.Error())
 	}
 
 	// Parsing data tugas
@@ -276,13 +259,13 @@ func (h *Handler) CreateTaskAdmin(ctx *fiber.Ctx) error {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, err.Error())
 	}
 
-	err := validation.ValidateStruct(validation.Validate, taskRequest)
+	err = validation.ValidateStruct(validation.Validate, taskRequest)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, err.Error())
 	}
 
 	task := &task2.ListTaskforCreate{
-		UserID:      userIdInt64,
+		UserID:      userID,
 		Title:       taskRequest.Title,
 		Description: taskRequest.Description,
 	}
@@ -304,9 +287,9 @@ func (h *Handler) CreateTaskAdmin(ctx *fiber.Ctx) error {
 // @Description Membuat tugas oleh admin untuk pegawai
 // @Accept json
 // @Produce json
-// @Param id path int true "ID Pegawai"
+// @Param id path string true "ID Pegawai"
 // @Param taskRequest body request.CreateTask true "Data tugas yang akan dibuat"
-// @Success 201 {object} entity.Tasks
+// @Success 201 {object} model.Tasks
 // @Failure 400 {object} respError.ErrorResponse
 // @Failure 401 {object} respError.ErrorResponse
 // @Failure 500 {object} respError.ErrorResponse
@@ -315,7 +298,7 @@ func (h *Handler) CreateTaskAdmin(ctx *fiber.Ctx) error {
 // @Tags task
 func (h *Handler) CreateTaskForPegawai(ctx *fiber.Ctx) error {
 	pegawaiIDParam := ctx.Params("id")
-	pegawaiID, err := strconv.Atoi(pegawaiIDParam)
+	pegawaiID, err := uuid.Parse(pegawaiIDParam)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid employee ID")
 	}
@@ -332,7 +315,7 @@ func (h *Handler) CreateTaskForPegawai(ctx *fiber.Ctx) error {
 	}
 
 	// Dapatkan peran pegawai yang ditentukan dalam tugas
-	pegawaiRole, err := h.TaskRepository.GetRoleByID(uint(pegawaiID))
+	pegawaiRole, err := h.TaskRepository.GetRoleByID(pegawaiID)
 	if err != nil {
 		logrus.Error(err)
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "id not found")
@@ -344,7 +327,7 @@ func (h *Handler) CreateTaskForPegawai(ctx *fiber.Ctx) error {
 	}
 
 	task := &task2.ListTaskforCreate{
-		UserID:      uint(pegawaiID), // Menggunakan nilai yang sesuai
+		UserID:      pegawaiID, // Menggunakan nilai yang sesuai
 		Title:       taskRequest.Title,
 		Description: taskRequest.Description,
 	}
@@ -368,9 +351,9 @@ func (h *Handler) CreateTaskForPegawai(ctx *fiber.Ctx) error {
 // @Description Mengupdate tugas oleh admin
 // @Accept json
 // @Produce json
-// @Param taskID path int true "ID Tugas"
+// @Param taskID path string true "ID Tugas"
 // @Param taskRequest body request.UpdateTask true "Data tugas yang akan diupdate"
-// @Success 200 {object} entity.Tasks
+// @Success 200 {object} model.Tasks
 // @Failure 400 {object} respError.ErrorResponse
 // @Failure 401 {object} respError.ErrorResponse
 // @Failure 404 {object} respError.ErrorResponse
@@ -382,7 +365,7 @@ func (h *Handler) UpdateTaskAdmin(ctx *fiber.Ctx) error {
 	// Dapatkan ID tugas dari URL
 	taskIDParam := ctx.Params("taskID")
 
-	taskID, err := strconv.Atoi(taskIDParam)
+	taskID, err := uuid.Parse(taskIDParam)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid task ID")
 	}
@@ -394,10 +377,10 @@ func (h *Handler) UpdateTaskAdmin(ctx *fiber.Ctx) error {
 	}
 
 	// Dapatkan ID pengguna dari token
-	userID := ctx.Locals("user_id").(uint)
+	userID := ctx.Locals("user_id").(uuid.UUID)
 
 	// Retrieve the task from the database
-	task, err := h.TaskRepository.GetTaskByID(uint(taskID))
+	task, err := h.TaskRepository.GetTaskByID(taskID)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusNotFound, "Task not found")
 	}
@@ -427,10 +410,10 @@ func (h *Handler) UpdateTaskAdmin(ctx *fiber.Ctx) error {
 // @Description Mengupdate tugas oleh pegawai
 // @Accept json
 // @Produce json
-// @Param userID path int true "ID Pengguna"
-// @Param taskID path int true "ID Tugas"
+// @Param userID path string true "ID Pengguna"
+// @Param taskID path string true "ID Tugas"
 // @Param taskRequest body request.UpdateTask true "Data tugas yang akan diupdate"
-// @Success 200 {object} entity.Tasks
+// @Success 200 {object} model.Tasks
 // @Failure 400 {object} respError.ErrorResponse
 // @Failure 401 {object} respError.ErrorResponse
 // @Failure 404 {object} respError.ErrorResponse
@@ -443,12 +426,12 @@ func (h *Handler) UpdateTaskPegawai(ctx *fiber.Ctx) error {
 	userIDParam := ctx.Params("userID")
 	taskIDParam := ctx.Params("taskID")
 
-	userID, err := strconv.Atoi(userIDParam)
+	userID, err := uuid.Parse(userIDParam)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid user ID")
 	}
 
-	taskID, err := strconv.Atoi(taskIDParam)
+	taskID, err := uuid.Parse(taskIDParam)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid task ID")
 	}
@@ -460,7 +443,7 @@ func (h *Handler) UpdateTaskPegawai(ctx *fiber.Ctx) error {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, err.Error())
 	}
 
-	pegawaiRole, err := h.TaskRepository.GetRoleByID(uint(userID))
+	pegawaiRole, err := h.TaskRepository.GetRoleByID(userID)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, "ID not found")
 	}
@@ -471,13 +454,13 @@ func (h *Handler) UpdateTaskPegawai(ctx *fiber.Ctx) error {
 	// bisa di isi validasi kalau mau
 
 	// Retrieve the task from the database
-	task, err := h.TaskRepository.GetTaskByID(uint(taskID))
+	task, err := h.TaskRepository.GetTaskByID(taskID)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusNotFound, "Task not found")
 	}
 
 	// Check if the user ID matches the task's user ID
-	if userID != int(task.UserID) {
+	if userID != task.UserID {
 		return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized: User ID does not match task's user ID")
 	}
 
@@ -503,8 +486,8 @@ func (h *Handler) UpdateTaskPegawai(ctx *fiber.Ctx) error {
 // @Description Menampilkan daftar tugas untuk pengguna tertentu dengan paginasi
 // @Accept json
 // @Produce json
-// @Param userID path int true "ID Pengguna"
-// @Success 200 {array} entity.User
+// @Param userID path string true "ID Pengguna"
+// @Success 200 {array} model.User
 // @Failure 400 {object} respError.ErrorResponse
 // @Failure 500 {object} respError.ErrorResponse
 // @Security apikeyauth
@@ -513,11 +496,11 @@ func (h *Handler) UpdateTaskPegawai(ctx *fiber.Ctx) error {
 func (h *Handler) ViewUserById(ctx *fiber.Ctx) error {
 	IdParam := ctx.Params("id")
 
-	userID, err := strconv.Atoi(IdParam)
+	userID, err := uuid.Parse(IdParam)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid user ID")
 	}
-	user, err := h.UserRepository.GetUserByID(uint(userID))
+	user, err := h.UserRepository.GetUserByID(userID)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
 	}
@@ -533,10 +516,10 @@ func (h *Handler) ViewUserById(ctx *fiber.Ctx) error {
 // @Description Menampilkan daftar tugas untuk pengguna tertentu dengan paginasi
 // @Accept json
 // @Produce json
-// @Param userID path int true "ID Pengguna"
+// @Param userID path string true "ID Pengguna"
 // @Param page query int false "Nomor halaman (default: 1)"
 // @Param perPage query int false "Jumlah item per halaman (default: 5)"
-// @Success 200 {array} entity.Tasks
+// @Success 200 {array} model.Tasks
 // @Failure 400 {object} respError.ErrorResponse
 // @Failure 500 {object} respError.ErrorResponse
 // @Security apikeyauth
@@ -546,7 +529,7 @@ func (h *Handler) ViewTasksByUser(ctx *fiber.Ctx) error {
 	// Dapatkan ID pengguna dari URL
 	userIDParam := ctx.Params("userID")
 
-	userID, err := strconv.Atoi(userIDParam)
+	userID, err := uuid.Parse(userIDParam)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid user ID")
 	}
@@ -560,7 +543,7 @@ func (h *Handler) ViewTasksByUser(ctx *fiber.Ctx) error {
 	//offset := (page - 1) * perPage
 
 	// Mengambil daftar tugas untuk pengguna tertentu berdasarkan halaman dan jumlah per halaman
-	tasks, err := h.TaskRepository.GetTasksByUserIDWithPage(uint(userID), perPage, offset)
+	tasks, err := h.TaskRepository.GetTasksByUserIDWithPage(userID, perPage, offset)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
 	}
@@ -592,12 +575,12 @@ func (h *Handler) ViewUserOrTaskByID(ctx *fiber.Ctx) error {
 	userIDParam := ctx.Query("userId")
 	taskIDParam := ctx.Query("taskId")
 
-	var userID int
-	var taskID int
+	var userID uuid.UUID
+	var taskID uuid.UUID
 	var err error
 
 	if userIDParam != "" {
-		userID, err = strconv.Atoi(userIDParam)
+		userID, err = uuid.Parse(userIDParam)
 		if err != nil {
 			return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid user ID")
 		}
@@ -605,7 +588,7 @@ func (h *Handler) ViewUserOrTaskByID(ctx *fiber.Ctx) error {
 
 	// Dapatkan ID tugas (task) dari URL
 	if taskIDParam != "" {
-		taskID, err = strconv.Atoi(taskIDParam)
+		taskID, err = uuid.Parse(taskIDParam)
 		if err != nil {
 			return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid task ID")
 		}
@@ -617,7 +600,7 @@ func (h *Handler) ViewUserOrTaskByID(ctx *fiber.Ctx) error {
 	var user *task2.User
 	if userIDParam != "" {
 		// Dapatkan detail pengguna berdasarkan ID pengguna
-		user, err = h.UserRepository.GetByID(uint(userID))
+		user, err = h.UserRepository.GetByID(userID)
 		if err != nil {
 			return respError.ErrResponse(ctx, fiber.StatusNotFound, "User not found")
 		}
@@ -626,7 +609,7 @@ func (h *Handler) ViewUserOrTaskByID(ctx *fiber.Ctx) error {
 	var task *task2.Tasks
 	if taskIDParam != "" {
 		// Dapatkan detail tugas berdasarkan ID tugas
-		task, err = h.TaskRepository.GetTaskByID(uint(taskID))
+		task, err = h.TaskRepository.GetTaskByID(taskID)
 		if err != nil {
 			return respError.ErrResponse(ctx, fiber.StatusNotFound, "Task not found")
 		}
@@ -648,7 +631,7 @@ func (h *Handler) ViewUserOrTaskByID(ctx *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param idtask path int true "ID Tugas"
-// @Success 200 {object} entity.Tasks
+// @Success 200 {object} model.Tasks
 // @Failure 400 {object} respError.ErrorResponse
 // @Failure 401 {object} respError.ErrorResponse
 // @Failure 404 {object} respError.ErrorResponse
@@ -661,7 +644,7 @@ func (h *Handler) ViewTaskByID(ctx *fiber.Ctx) error {
 	// Dapatkan ID tugas (task) dari URL
 	taskIDParam := ctx.Params("idtask")
 
-	taskID, err := strconv.Atoi(taskIDParam)
+	taskID, err := uuid.Parse(taskIDParam)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid task ID")
 	}
@@ -669,7 +652,7 @@ func (h *Handler) ViewTaskByID(ctx *fiber.Ctx) error {
 	// Pastikan bahwa pengguna memiliki akses ke tugas ini (misalnya, periksa apakah pengguna adalah pemilik tugas ini atau pengguna dengan izin yang sesuai).
 
 	// Dapatkan detail tugas berdasarkan ID tugas
-	task, err := h.TaskRepository.GetTaskByID(uint(taskID))
+	task, err := h.TaskRepository.GetTaskByID(taskID)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusNotFound, "Task not found")
 	}
@@ -690,7 +673,7 @@ func (h *Handler) ViewTaskByID(ctx *fiber.Ctx) error {
 // @Description Menghapus pengguna dan tugas terkait (hanya untuk admin)
 // @Accept json
 // @Produce json
-// @Param userId path int true "ID Pengguna"
+// @Param userId path string true "ID Pengguna"
 // @Success 200 {object} response.SuccessMessage
 // @Failure 400 {object} respError.ErrorResponse
 // @Failure 401 {object} respError.ErrorResponse
@@ -702,10 +685,13 @@ func (h *Handler) ViewTaskByID(ctx *fiber.Ctx) error {
 // @Tags auth
 func (h *Handler) DeleteUser(ctx *fiber.Ctx) error {
 	// Dapatkan ID pengguna yang ingin dihapus
-	userIDParam := ctx.Params("userId")
-	userID, err := strconv.Atoi(userIDParam)
-	if err != nil {
-		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid user ID")
+	userIDParam := ctx.Query("userId")
+	userID, err := uuid.Parse(userIDParam)
+	if userIDParam != "" {
+		userID, err = uuid.Parse(userIDParam)
+		if err != nil {
+			return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid user ID")
+		}
 	}
 
 	// Pastikan pengguna yang melakukan permintaan memiliki peran "admin"
@@ -715,7 +701,7 @@ func (h *Handler) DeleteUser(ctx *fiber.Ctx) error {
 	}
 
 	// Dapatkan peran pengguna yang ingin dihapus
-	userToDelete, err := h.UserRepository.GetByID(uint(userID))
+	userToDelete, err := h.UserRepository.GetByID(userID)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusNotFound, "User not found")
 	}
@@ -726,13 +712,13 @@ func (h *Handler) DeleteUser(ctx *fiber.Ctx) error {
 	}
 
 	// Hapus semua tugas yang terkait dengan pengguna tersebut
-	err = h.UserRepository.DeleteTasksByUserID(uint(userID))
+	err = h.UserRepository.DeleteTasksByUserID(userID)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
 	}
 
 	// Hapus pengguna itu sendiri
-	err = h.UserRepository.DeleteUser(uint(userID))
+	err = h.UserRepository.DeleteUser(userID)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
 	}
@@ -744,8 +730,8 @@ func (h *Handler) DeleteUser(ctx *fiber.Ctx) error {
 // @Description Menghapus tugas oleh admin
 // @Accept json
 // @Produce json
-// @Param userId path int true "ID Pengguna"
-// @Param taskId path int true "ID Tugas"
+// @Param userId path string true "ID Pengguna"
+// @Param taskId path string true "ID Tugas"
 // @Success 200 {object} response.SuccessMessage
 // @Failure 400 {object} respError.ErrorResponse
 // @Failure 401 {object} respError.ErrorResponse
@@ -761,21 +747,30 @@ func (h *Handler) DeleteTaskForAdmin(ctx *fiber.Ctx) error {
 	}
 
 	// Dapatkan ID pengguna dan ID tugas dari URL
-	userIDParam := ctx.Params("userId")
-	taskIDParam := ctx.Params("taskId")
+	userIDParam := ctx.Query("userId")
+	taskIDParam := ctx.Query("taskId")
 
-	userID, err := strconv.Atoi(userIDParam)
-	if err != nil {
-		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid user ID")
+	var userID uuid.UUID
+	var taskID uuid.UUID
+	var err error
+
+	if userIDParam != "" {
+		userID, err = uuid.Parse(userIDParam)
+		if err != nil {
+			return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid user ID")
+		}
 	}
 
-	taskID, err := strconv.Atoi(taskIDParam)
-	if err != nil {
-		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid task ID")
+	// Dapatkan ID tugas (task) dari URL
+	if taskIDParam != "" {
+		taskID, err = uuid.Parse(taskIDParam)
+		if err != nil {
+			return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid task ID")
+		}
 	}
 
 	// Hapus tugas yang sesuai dengan ID pengguna dan ID tugas
-	err = h.TaskRepository.DeleteTaskByUserAndID(uint(userID), uint(taskID))
+	err = h.TaskRepository.DeleteTaskByUserAndID(userID, taskID)
 	if err != nil {
 		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
 	}
@@ -800,7 +795,7 @@ func (h *Handler) DeleteTaskForAdmin(ctx *fiber.Ctx) error {
 // @Router /user/myTask [get]
 // @Tags auth
 func (h *Handler) MyTask(ctx *fiber.Ctx) error {
-	user, err := h.UserRepository.GetByID(ctx.Locals("user_id").(uint))
+	user, err := h.UserRepository.GetByID(ctx.Locals("user_id").(uuid.UUID))
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
@@ -823,7 +818,7 @@ func (h *Handler) MyTask(ctx *fiber.Ctx) error {
 	taskResponses := make([]task2.ResponseTask, len(tasks))
 	for i, task := range tasks {
 		taskResponses[i] = task2.ResponseTask{
-			ID:          task.Id,
+			ID:          task.ID,
 			Title:       task.Title,
 			Description: task.Description,
 			UserID:      task.UserID,
@@ -845,7 +840,7 @@ func (h *Handler) MyTask(ctx *fiber.Ctx) error {
 // @Param perPage query int false "Jumlah item per halaman (default: 5)"
 // @Accept json
 // @Produce application/json
-// @Success 200 {object} []entity.User "List of users"
+// @Success 200 {object} []model.User "List of users"
 // @Failure 400,500 {object} respError.ErrorResponse
 // @Router /allusers [get]
 // @Tags other
@@ -879,7 +874,7 @@ func (h *Handler) ViewAllUsers(ctx *fiber.Ctx) error {
 // @Param search query string false "Search keyword to filter tasks (default: none)"
 // @Accept json
 // @Produce application/json
-// @Success 200 {object} []entity.Tasks "List of task"
+// @Success 200 {object} []model.Tasks "List of task"
 // @Failure 400,500 {object} respError.ErrorResponse
 // @Security apikeyauth
 // @Router /admin/allTasks [get]
@@ -950,7 +945,7 @@ func (h *Handler) ViewAllTask(ctx *fiber.Ctx) error {
 // @Param search query string true "Search term"
 // @Param page query integer false "Page number"
 // @Param perPage query integer false "Items per page"
-// @Success 200 {object} []entity.Tasks
+// @Success 200 {object} []model.Tasks
 // @Failure 400 {object} respError.ErrorResponse
 // @Failure 401 {object} respError.ErrorResponse
 // @Failure 500 {object} respError.ErrorResponse
@@ -985,7 +980,7 @@ func (h *Handler) Search(ctx *fiber.Ctx) error {
 	// Panggil fungsi untuk mencari tugas berdasarkan kata kunci pencarian dengan memeriksa peran pengguna
 	if userRole == "pegawai" {
 		// Jika pengguna adalah pegawai, cari tugas yang mereka miliki
-		userID := ctx.Locals("user_id").(uint) // Anda perlu menyesuaikan ini dengan cara Anda menyimpan ID pengguna
+		userID := ctx.Locals("user_id").(uuid.UUID) // Anda perlu menyesuaikan ini dengan cara Anda menyimpan ID pengguna
 		err = h.TaskRepository.SearchTasksForUser(&tasks, userID, search, perPage, offset)
 	} else if userRole == "admin" {
 		// Jika pengguna adalah admin, cari semua tugas

@@ -1,21 +1,24 @@
 package model
 
-import "time"
+import (
+	"github.com/google/uuid"
+	"time"
+)
 
 type User struct {
-	ID        uint   `gorm:"primaryKey" json:"id"`
-	Username  string `gorm:"unique" json:"username"`
-	Password  string `json:"password"`
-	Role      string `json:"role"`
+	ID        uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey" json:"id"`
+	Username  string    `gorm:"unique" json:"username"`
+	Password  string    `json:"password"`
+	Role      string    `json:"role"`
 	CreatedAt time.Time
 }
 
 type UserLogin struct {
-	ID       uint   `gorm:"primaryKey" json:"id"`
-	Username string `gorm:"unique" json:"username"`
-	Password string `json:"password"`
-	UserID   uint   `json:"user_id"`
-	Role     string `json:"role"`
+	ID       uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	Username string    `gorm:"unique" json:"username"`
+	Password string    `json:"password"`
+	UserID   uuid.UUID `json:"user_id"`
+	Role     string    `json:"role"`
 }
 
 //Tasks     []Tasks `json:"tasks"`

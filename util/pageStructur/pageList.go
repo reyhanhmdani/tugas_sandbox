@@ -1,5 +1,7 @@
 package pageStructur
 
+import "github.com/gofrs/uuid"
+
 type PageListWithUser struct {
 	Message     string         `json:"message"`
 	Status      int            `json:"status"`
@@ -11,10 +13,10 @@ type PageListWithUser struct {
 }
 
 type TaskWithUser struct {
-	ID       uint   `json:"id"`
-	UserID   uint   `json:"user_id"`
-	Username string `json:"username"`
-	Title    string `json:"title"`
+	ID       uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	UserID   uuid.UUID `json:"user_id"`
+	Username string    `json:"username"`
+	Title    string    `json:"title"`
 	// tambahkan atribut lain yang diperlukan
 }
 

@@ -55,7 +55,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/entity.Tasks"
+                                "$ref": "#/definitions/model.Tasks"
                             }
                         }
                     },
@@ -74,71 +74,7 @@
                 }
             }
         },
-        "/admin/create-task/{id}": {
-            "post": {
-                "security": [
-                    {
-                        "apikeyauth": []
-                    }
-                ],
-                "description": "Membuat tugas oleh admin untuk pegawai",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "task"
-                ],
-                "summary": "Create Task for Pegawai",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID Pegawai",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Data tugas yang akan dibuat",
-                        "name": "taskRequest",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.CreateTask"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/entity.Tasks"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/crete-task": {
+        "/admin/create-task": {
             "post": {
                 "security": [
                     {
@@ -172,8 +108,72 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/entity.Tasks"
+                                "$ref": "#/definitions/model.Tasks"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/respError.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/create-task/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "apikeyauth": []
+                    }
+                ],
+                "description": "Membuat tugas oleh admin untuk pegawai",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "Create Task for Pegawai",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID Pegawai",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Data tugas yang akan dibuat",
+                        "name": "taskRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.CreateTask"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/model.Tasks"
                         }
                     },
                     "400": {
@@ -217,14 +217,14 @@
                 "summary": "Delete Task for Admin",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID Pengguna",
                         "name": "userId",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID Tugas",
                         "name": "taskId",
                         "in": "path",
@@ -279,7 +279,7 @@
                 "summary": "Delete User",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID Pengguna",
                         "name": "userId",
                         "in": "path",
@@ -346,7 +346,7 @@
                 "summary": "Update Task for Admin",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID Tugas",
                         "name": "taskID",
                         "in": "path",
@@ -366,7 +366,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/entity.Tasks"
+                            "$ref": "#/definitions/model.Tasks"
                         }
                     },
                     "400": {
@@ -416,14 +416,14 @@
                 "summary": "Update Task by Pegawai",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID Pengguna",
                         "name": "userID",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID Tugas",
                         "name": "taskID",
                         "in": "path",
@@ -443,7 +443,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/entity.Tasks"
+                            "$ref": "#/definitions/model.Tasks"
                         }
                     },
                     "400": {
@@ -493,7 +493,7 @@
                 "summary": "View Tasks By User",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID Pengguna",
                         "name": "userID",
                         "in": "path",
@@ -506,7 +506,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/entity.User"
+                                "$ref": "#/definitions/model.User"
                             }
                         }
                     },
@@ -606,7 +606,7 @@
                 "summary": "View Tasks By User",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID Pengguna",
                         "name": "userID",
                         "in": "path",
@@ -631,7 +631,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/entity.Tasks"
+                                "$ref": "#/definitions/model.Tasks"
                             }
                         }
                     },
@@ -652,6 +652,7 @@
         },
         "/allusers": {
             "get": {
+                "description": "View all users with pagination",
                 "consumes": [
                     "application/json"
                 ],
@@ -661,6 +662,8 @@
                 "tags": [
                     "other"
                 ],
+                "summary": "View all users",
+                "operationId": "view-all-users",
                 "parameters": [
                     {
                         "type": "integer",
@@ -681,7 +684,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/entity.User"
+                                "$ref": "#/definitions/model.User"
                             }
                         }
                     },
@@ -800,7 +803,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "task"
+                    "auth"
                 ],
                 "summary": "Register a new user",
                 "operationId": "register-user",
@@ -868,7 +871,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/entity.Tasks"
+                            "$ref": "#/definitions/model.Tasks"
                         }
                     },
                     "400": {
@@ -915,7 +918,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/entity.ListUsers"
+                                "$ref": "#/definitions/model.ListUsers"
                             }
                         }
                     },
@@ -976,10 +979,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entity.Tasks"
-                            }
+                            "$ref": "#/definitions/response.SuccessMessage"
                         }
                     },
                     "400": {
@@ -1027,7 +1027,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/entity.ListUsers"
+                                "$ref": "#/definitions/model.ListUsers"
                             }
                         }
                     },
@@ -1053,7 +1053,7 @@
                         "apikeyauth": []
                     }
                 ],
-                "description": "admin bisa mencari semua task, sedangkan pegawai hanya bisa mencari task yang di miliki oleh pegawai pegawai",
+                "description": "admin bisa mencari semua task, sedangkan pegawai hanya bisa mencari task yang di miliki oleh pegawai",
                 "consumes": [
                     "application/json"
                 ],
@@ -1092,7 +1092,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/entity.Tasks"
+                                "$ref": "#/definitions/model.Tasks"
                             }
                         }
                     },
@@ -1119,7 +1119,7 @@
         }
     },
     "definitions": {
-        "entity.ListUsers": {
+        "model.ListUsers": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -1133,34 +1133,31 @@
                 }
             }
         },
-        "entity.Tasks": {
+        "model.Tasks": {
             "type": "object",
             "properties": {
                 "description": {
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "title": {
                     "type": "string"
                 },
-                "user": {
-                    "$ref": "#/definitions/entity.User"
-                },
                 "user_id": {
-                    "type": "integer"
+                    "type": "string"
                 }
             }
         },
-        "entity.User": {
+        "model.User": {
             "type": "object",
             "properties": {
                 "createdAt": {
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "password": {
                     "type": "string"
@@ -1252,7 +1249,7 @@
             "type": "object",
             "properties": {
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "message": {
                     "type": "string"

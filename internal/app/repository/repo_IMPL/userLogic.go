@@ -2,6 +2,7 @@ package repo_IMPL
 
 import (
 	"errors"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"testing_backend/internal/app/model"
 )
@@ -33,7 +34,7 @@ func (U *UserRepository) CreateUser(users *model.User) error {
 
 // PROFILE
 
-func (U *UserRepository) ProfileUser(userId uint) (*model.ListUsers, error) {
+func (U *UserRepository) ProfileUser(userId uuid.UUID) (*model.ListUsers, error) {
 	var profile model.ListUsers
 	if err := U.DB.Where("id = ?", userId).First(&profile).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -44,7 +45,7 @@ func (U *UserRepository) ProfileUser(userId uint) (*model.ListUsers, error) {
 	return &profile, nil
 }
 
-func (U *UserRepository) GetByID(userID uint) (*model.User, error) {
+func (U *UserRepository) GetByID(userID uuid.UUID) (*model.User, error) {
 	var user model.User
 	if err := U.DB.First(&user, userID).Error; err != nil {
 		return nil, err
@@ -52,7 +53,7 @@ func (U *UserRepository) GetByID(userID uint) (*model.User, error) {
 	return &user, nil
 }
 
-func (U *UserRepository) GetUserByID(id uint) ([]model.User, error) {
+func (U *UserRepository) GetUserByID(id uuid.UUID) ([]model.User, error) {
 	var users []model.User
 	err := U.DB.Where("id", id).Find(&users).Error
 	if err != nil {
@@ -62,7 +63,7 @@ func (U *UserRepository) GetUserByID(id uint) ([]model.User, error) {
 	return users, nil
 }
 
-func (U *UserRepository) GetTaskByUserByID(userID uint, user *model.User) error {
+func (U *UserRepository) GetTaskByUserByID(userID uuid.UUID, user *model.User) error {
 	err := U.DB.Where("id = ?", userID).First(user).Error
 	if err != nil {
 		return err
@@ -94,7 +95,7 @@ func (U *UserRepository) PaginatePegawaiUsers(users *[]model.User, perPage, offs
 
 // token
 
-func (U *UserRepository) AddValidToken(userID uint, token, refreshToken string) error {
+func (U *UserRepository) AddValidToken(userID uuid.UUID, token, refreshToken string) error {
 	// Cek apakah token sudah ada dalam database
 	existingToken := model.ValidToken{}
 	if err := U.DB.Where("user_id = ? AND token = ? AND refresh_token = ?", userID, token, refreshToken).First(&existingToken).Error; err != nil {
@@ -117,7 +118,7 @@ func (U *UserRepository) AddValidToken(userID uint, token, refreshToken string) 
 }
 
 // DELETE USER
-func (U *UserRepository) DeleteTasksByUserID(userID uint) error {
+func (U *UserRepository) DeleteTasksByUserID(userID uuid.UUID) error {
 	// Hapus semua tugas yang dimiliki oleh pengguna dengan ID yang diberikan
 	err := U.DB.Where("user_id = ?", userID).Delete(&model.Tasks{}).Error
 	if err != nil {
@@ -126,7 +127,7 @@ func (U *UserRepository) DeleteTasksByUserID(userID uint) error {
 	return nil
 }
 
-func (U *UserRepository) DeleteUser(userID uint) error {
+func (U *UserRepository) DeleteUser(userID uuid.UUID) error {
 	// Hapus pengguna berdasarkan ID
 	err := U.DB.Where("id = ?", userID).Delete(&model.User{}).Error
 	if err != nil {
@@ -136,7 +137,7 @@ func (U *UserRepository) DeleteUser(userID uint) error {
 }
 
 // Logout
-func (U *UserRepository) DeleteUserToken(userID uint) error {
+func (U *UserRepository) DeleteUserToken(userID uuid.UUID) error {
 	// Hapus validToken berdasarkan userID dan token di dalam database menggunakan GORM
 	if err := U.DB.Where("user_id = ?", userID).Delete(model.ValidToken{}).Error; err != nil {
 		return err
@@ -146,7 +147,7 @@ func (U *UserRepository) DeleteUserToken(userID uint) error {
 }
 
 // login
-func (U *UserRepository) GetValidTokenByUserID(userID uint) (*model.ValidToken, error) {
+func (U *UserRepository) GetValidTokenByUserID(userID uuid.UUID) (*model.ValidToken, error) {
 	validToken := &model.ValidToken{}
 	if err := U.DB.Where("user_id = ?", userID).First(validToken).Error; err != nil {
 		return nil, err
@@ -155,7 +156,7 @@ func (U *UserRepository) GetValidTokenByUserID(userID uint) (*model.ValidToken, 
 	return validToken, nil
 }
 
-func (U *UserRepository) DeleteValidTokenByUserID(userID uint) error {
+func (U *UserRepository) DeleteValidTokenByUserID(userID uuid.UUID) error {
 	// Hapus token yang sesuai dengan ID pengguna dari tabel valid_tokens
 	if err := U.DB.Where("user_id = ?", userID).Delete(&model.ValidToken{}).Error; err != nil {
 		return err
@@ -165,7 +166,7 @@ func (U *UserRepository) DeleteValidTokenByUserID(userID uint) error {
 }
 
 // valid token
-func (U *UserRepository) StoreRefreshToken(userID uint, refreshToken string) error {
+func (U *UserRepository) StoreRefreshToken(userID uuid.UUID, refreshToken string) error {
 	// Buat atau perbarui token penyegaran di dalam database
 	refresh := model.ValidToken{
 		UserID:       userID,
@@ -208,7 +209,7 @@ func (U *UserRepository) GetUserByRefreshToken(refreshToken string) (*model.Refr
 	return &user, nil
 }
 
-func (U *UserRepository) UpdateAccessToken(userID uint, newAccessToken string) error {
+func (U *UserRepository) UpdateAccessToken(userID uuid.UUID, newAccessToken string) error {
 	return U.DB.Model(&model.ValidToken{}).Where("user_id = ?", userID).Update("token", newAccessToken).Error
 }
 

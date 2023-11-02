@@ -1,5 +1,5 @@
 definitions:
-  entity.ListUsers:
+  model.ListUsers:
     properties:
       createdAt:
         type: string
@@ -8,25 +8,23 @@ definitions:
       username:
         type: string
     type: object
-  entity.Tasks:
+  model.Tasks:
     properties:
       description:
         type: string
       id:
-        type: integer
+        type: string
       title:
         type: string
-      user:
-        $ref: '#/definitions/entity.User'
       user_id:
-        type: integer
+        type: string
     type: object
-  entity.User:
+  model.User:
     properties:
       createdAt:
         type: string
       id:
-        type: integer
+        type: string
       password:
         type: string
       role:
@@ -87,7 +85,7 @@ definitions:
   response.LoginResponse:
     properties:
       id:
-        type: integer
+        type: string
       message:
         type: string
       refresh_token:
@@ -150,7 +148,7 @@ paths:
           description: List of task
           schema:
             items:
-              $ref: '#/definitions/entity.Tasks'
+              $ref: '#/definitions/model.Tasks'
             type: array
         "400":
           description: Bad Request
@@ -165,48 +163,7 @@ paths:
       summary: View all tasks
       tags:
       - auth
-  /admin/create-task/{id}:
-    post:
-      consumes:
-      - application/json
-      description: Membuat tugas oleh admin untuk pegawai
-      parameters:
-      - description: ID Pegawai
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Data tugas yang akan dibuat
-        in: body
-        name: taskRequest
-        required: true
-        schema:
-          $ref: '#/definitions/request.CreateTask'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/entity.Tasks'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/respError.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/respError.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/respError.ErrorResponse'
-      security:
-      - apikeyauth: []
-      summary: Create Task for Pegawai
-      tags:
-      - task
-  /admin/crete-task:
+  /admin/create-task:
     post:
       consumes:
       - application/json
@@ -224,7 +181,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/entity.Tasks'
+              $ref: '#/definitions/model.Tasks'
             type: array
         "400":
           description: Bad Request
@@ -243,6 +200,47 @@ paths:
       summary: CreateTaskAdmin
       tags:
       - task
+  /admin/create-task/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Membuat tugas oleh admin untuk pegawai
+      parameters:
+      - description: ID Pegawai
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Data tugas yang akan dibuat
+        in: body
+        name: taskRequest
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateTask'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Tasks'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respError.ErrorResponse'
+      security:
+      - apikeyauth: []
+      summary: Create Task for Pegawai
+      tags:
+      - task
   /admin/delete-task/{userId}/{taskId}:
     delete:
       consumes:
@@ -253,12 +251,12 @@ paths:
         in: path
         name: userId
         required: true
-        type: integer
+        type: string
       - description: ID Tugas
         in: path
         name: taskId
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -293,7 +291,7 @@ paths:
         in: path
         name: userId
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -336,7 +334,7 @@ paths:
         in: path
         name: taskID
         required: true
-        type: integer
+        type: string
       - description: Data tugas yang akan diupdate
         in: body
         name: taskRequest
@@ -349,7 +347,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/entity.Tasks'
+            $ref: '#/definitions/model.Tasks'
         "400":
           description: Bad Request
           schema:
@@ -381,12 +379,12 @@ paths:
         in: path
         name: userID
         required: true
-        type: integer
+        type: string
       - description: ID Tugas
         in: path
         name: taskID
         required: true
-        type: integer
+        type: string
       - description: Data tugas yang akan diupdate
         in: body
         name: taskRequest
@@ -399,7 +397,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/entity.Tasks'
+            $ref: '#/definitions/model.Tasks'
         "400":
           description: Bad Request
           schema:
@@ -431,7 +429,7 @@ paths:
         in: path
         name: userID
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -439,7 +437,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/entity.User'
+              $ref: '#/definitions/model.User'
             type: array
         "400":
           description: Bad Request
@@ -504,7 +502,7 @@ paths:
         in: path
         name: userID
         required: true
-        type: integer
+        type: string
       - description: 'Nomor halaman (default: 1)'
         in: query
         name: page
@@ -520,7 +518,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/entity.Tasks'
+              $ref: '#/definitions/model.Tasks'
             type: array
         "400":
           description: Bad Request
@@ -539,6 +537,8 @@ paths:
     get:
       consumes:
       - application/json
+      description: View all users with pagination
+      operationId: view-all-users
       parameters:
       - description: 'Nomor halaman (default: 1)'
         in: query
@@ -555,7 +555,7 @@ paths:
           description: List of users
           schema:
             items:
-              $ref: '#/definitions/entity.User'
+              $ref: '#/definitions/model.User'
             type: array
         "400":
           description: Bad Request
@@ -565,6 +565,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/respError.ErrorResponse'
+      summary: View all users
       tags:
       - other
   /login:
@@ -656,7 +657,7 @@ paths:
             $ref: '#/definitions/respError.ErrorResponse'
       summary: Register a new user
       tags:
-      - task
+      - auth
   /user/detailTask/{idtask}:
     get:
       consumes:
@@ -674,7 +675,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/entity.Tasks'
+            $ref: '#/definitions/model.Tasks'
         "400":
           description: Bad Request
           schema:
@@ -703,7 +704,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/entity.ListUsers'
+              $ref: '#/definitions/model.ListUsers'
             type: array
         "400":
           description: Bad Request
@@ -743,9 +744,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/entity.Tasks'
-            type: array
+            $ref: '#/definitions/response.SuccessMessage'
         "400":
           description: Bad Request
           schema:
@@ -775,7 +774,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/entity.ListUsers'
+              $ref: '#/definitions/model.ListUsers'
             type: array
         "400":
           description: Bad Request
@@ -795,7 +794,7 @@ paths:
       consumes:
       - application/json
       description: admin bisa mencari semua task, sedangkan pegawai hanya bisa mencari
-        task yang di miliki oleh pegawai pegawai
+        task yang di miliki oleh pegawai
       operationId: search-tasks
       parameters:
       - description: Search term
@@ -818,7 +817,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/entity.Tasks'
+              $ref: '#/definitions/model.Tasks'
             type: array
         "400":
           description: Bad Request

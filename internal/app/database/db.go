@@ -69,7 +69,7 @@ func Migrate(db *gorm.DB) error {
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://internal/app/database/migrations",
+		"file:migrations",
 		"postgres", driver)
 	if err != nil {
 		return err
