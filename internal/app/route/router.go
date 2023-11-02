@@ -58,7 +58,6 @@ func (rtr *Route) RouteInit() *fiber.App {
 		admin.Get("/allTasks", rtr.usersService.ViewAllTask)
 
 		// DELETE
-		// menghapus task pegawai, pilih id pegawai nya baru pilih id task nya
 		admin.Delete("/delete-user-or-task", rtr.usersService.DeleteUserORTaskForAdmin)
 	}
 
