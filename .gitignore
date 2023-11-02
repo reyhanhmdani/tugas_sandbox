@@ -1,4 +1,5 @@
 .idea
 .env
-config.env
+.config.env
 note
+peninggalan.go
