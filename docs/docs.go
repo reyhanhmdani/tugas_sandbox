@@ -202,7 +202,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/delete-task/{userId}/{taskId}": {
+        "/admin/delete-user-or-task/{userId}/{taskId}": {
             "delete": {
                 "security": [
                     {
@@ -251,73 +251,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/delete-user/{userId}": {
-            "delete": {
-                "security": [
-                    {
-                        "apikeyauth": []
-                    }
-                ],
-                "description": "Menghapus pengguna dan tugas terkait (hanya untuk admin)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Delete User",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ID Pengguna",
-                        "name": "userId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.SuccessMessage"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/respError.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/respError.ErrorResponse"
                         }

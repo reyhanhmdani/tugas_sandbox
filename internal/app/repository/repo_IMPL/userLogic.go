@@ -143,8 +143,10 @@ func (U *UserRepository) DeleteUserAndTasks(userID uuid.UUID) error {
 	}
 
 	// Hapus pengguna berdasarkan ID
-	if err := U.DB.Where("id = ?", userID).Delete(&model.User{}).Error; err != nil {
-		return err
+	result := U.DB.Where("id = ?", userID).Delete(&model.User{})
+	if result.RowsAffected == 0 {
+		// Tidak ada tugas yang dihapus, tugas tidak ditemukan
+		return errors.New("user not found")
 	}
 
 	return nil

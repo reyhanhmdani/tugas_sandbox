@@ -669,63 +669,6 @@ func (h *Handler) ViewTaskByID(ctx *fiber.Ctx) error {
 
 // delete
 
-// @Summary Delete User
-// @Description Menghapus pengguna dan tugas terkait (hanya untuk admin)
-// @Accept json
-// @Produce json
-// @Param userId path string true "ID Pengguna"
-// @Success 200 {object} response.SuccessMessage
-// @Failure 400 {object} respError.ErrorResponse
-// @Failure 401 {object} respError.ErrorResponse
-// @Failure 403 {object} respError.ErrorResponse
-// @Failure 404 {object} respError.ErrorResponse
-// @Failure 500 {object} respError.ErrorResponse
-// @Security apikeyauth
-// @Router /admin/delete-user/{userId} [delete]
-// @Tags auth
-func (h *Handler) DeleteUser(ctx *fiber.Ctx) error {
-	// Dapatkan ID pengguna yang ingin dihapus
-	userIDParam := ctx.Query("userId")
-	userID, err := uuid.Parse(userIDParam)
-	if userIDParam != "" {
-		userID, err = uuid.Parse(userIDParam)
-		if err != nil {
-			return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid user ID")
-		}
-	}
-
-	// Pastikan pengguna yang melakukan permintaan memiliki peran "admin"
-	userRole := ctx.Locals("role").(string)
-	if userRole != "admin" {
-		return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized: Only admin can delete users")
-	}
-
-	// Dapatkan peran pengguna yang ingin dihapus
-	userToDelete, err := h.UserRepository.GetByID(userID)
-	if err != nil {
-		return respError.ErrResponse(ctx, fiber.StatusNotFound, "User not found")
-	}
-
-	// Pastikan pengguna yang akan dihapus memiliki peran "pegawai" (bukan admin)
-	if userToDelete.Role == "admin" {
-		return respError.ErrResponse(ctx, fiber.StatusForbidden, "Forbidden: Cannot delete other admins")
-	}
-
-	// Hapus semua tugas yang terkait dengan pengguna tersebut
-	err = h.UserRepository.DeleteTasksByUserID(userID)
-	if err != nil {
-		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
-	}
-
-	// Hapus pengguna itu sendiri
-	err = h.UserRepository.DeleteUser(userID)
-	if err != nil {
-		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
-	}
-
-	return respError.ErrResponse(ctx, fiber.StatusOK, "Success delete User")
-}
-
 // @Summary Delete Task for Admin
 // @Description Menghapus tugas oleh admin
 // @Accept json
@@ -750,25 +693,23 @@ func (h *Handler) DeleteUserORTaskForAdmin(ctx *fiber.Ctx) error {
 		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid task ID")
 	}
 
-	// Jika hanya parameter `userId` yang ada, hapus semua tugas yang terkait dengan pengguna tersebut
-	if userID == uuid.Nil {
-		err = h.UserRepository.DeleteUserAndTasks(userID)
-		if err != nil {
-			return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
-		}
-		return respError.ErrResponse(ctx, fiber.StatusOK, "Success delete all tasks for the user")
-	}
-
-	// Cek jika kedua parameter tidak kosong, maka hapus tugas dengan ID pengguna dan ID tugas yang sesuai
-	if userID == uuid.Nil && taskID == uuid.Nil {
+	if userID != uuid.Nil && taskID != uuid.Nil {
+		// Hapus tugas dengan ID yang diberikan
 		err = h.TaskRepository.DeleteTaskByUserAndID(userID, taskID)
 		if err != nil {
 			return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
 		}
 		return respError.ErrResponse(ctx, fiber.StatusOK, "Success delete Task")
+	} else if userID != uuid.Nil {
+		// Hapus semua tugas yang terkait dengan pengguna yang diberikan
+		err = h.UserRepository.DeleteUserAndTasks(userID)
+		if err != nil {
+			return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
+		}
+		return respError.ErrResponse(ctx, fiber.StatusOK, "Success delete user")
 	}
 
-	return respError.ErrResponse(ctx, fiber.StatusOK, "Success delete Task")
+	return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid request: Please provide userId and/or taskId")
 }
 
 // search pagination
