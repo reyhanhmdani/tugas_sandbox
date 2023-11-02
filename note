@@ -11,3 +11,7 @@ list dengan pagination, create, update, detail, delete 6. /my-task (pegawai) -> 
 
 token belum ke handler di swagger ... selalu unauthorized
 sama search
+
+
+buatkan ketika saya memasukkan param nya userId saja di menghapus user dan isi task nya juga,
+ketika userId di masukkan dan taskId juga di masukkan maka task yang di pilih di hapus ..

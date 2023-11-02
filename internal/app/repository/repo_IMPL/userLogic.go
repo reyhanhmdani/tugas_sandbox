@@ -136,6 +136,20 @@ func (U *UserRepository) DeleteUser(userID uuid.UUID) error {
 	return nil
 }
 
+func (U *UserRepository) DeleteUserAndTasks(userID uuid.UUID) error {
+	// Hapus tugas yang dimiliki oleh pengguna dengan ID yang diberikan
+	if err := U.DB.Where("user_id = ?", userID).Delete(&model.Tasks{}).Error; err != nil {
+		return err
+	}
+
+	// Hapus pengguna berdasarkan ID
+	if err := U.DB.Where("id = ?", userID).Delete(&model.User{}).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Logout
 func (U *UserRepository) DeleteUserToken(userID uuid.UUID) error {
 	// Hapus validToken berdasarkan userID dan token di dalam database menggunakan GORM

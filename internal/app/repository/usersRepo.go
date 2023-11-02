@@ -27,6 +27,7 @@ type UserRepository interface {
 
 	DeleteTasksByUserID(userID uuid.UUID) error
 	DeleteUser(userID uuid.UUID) error
+	DeleteUserAndTasks(userID uuid.UUID) error
 
 	//Logout
 	DeleteUserToken(userID uuid.UUID) error

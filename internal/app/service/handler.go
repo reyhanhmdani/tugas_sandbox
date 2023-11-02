@@ -737,42 +737,35 @@ func (h *Handler) DeleteUser(ctx *fiber.Ctx) error {
 // @Failure 401 {object} respError.ErrorResponse
 // @Failure 500 {object} respError.ErrorResponse
 // @Security apikeyauth
-// @Router /admin/delete-task/{userId}/{taskId} [delete]
+// @Router /admin/delete-user-or-task/{userId}/{taskId} [delete]
 // @Tags auth
-func (h *Handler) DeleteTaskForAdmin(ctx *fiber.Ctx) error {
-	// Pastikan pengguna yang melakukan permintaan memiliki peran "admin"
-	userRole := ctx.Locals("role").(string)
-	if userRole != "admin" {
-		return respError.ErrResponse(ctx, fiber.StatusUnauthorized, "Unauthorized: Only admin can delete tasks")
-	}
-
-	// Dapatkan ID pengguna dan ID tugas dari URL
-	userIDParam := ctx.Query("userId")
-	taskIDParam := ctx.Query("taskId")
-
-	var userID uuid.UUID
-	var taskID uuid.UUID
-	var err error
-
-	if userIDParam != "" {
-		userID, err = uuid.Parse(userIDParam)
-		if err != nil {
-			return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid user ID")
-		}
-	}
-
-	// Dapatkan ID tugas (task) dari URL
-	if taskIDParam != "" {
-		taskID, err = uuid.Parse(taskIDParam)
-		if err != nil {
-			return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid task ID")
-		}
-	}
-
-	// Hapus tugas yang sesuai dengan ID pengguna dan ID tugas
-	err = h.TaskRepository.DeleteTaskByUserAndID(userID, taskID)
+func (h *Handler) DeleteUserORTaskForAdmin(ctx *fiber.Ctx) error {
+	userID, err := helper2.ParseUUIDParam(ctx, "userId")
 	if err != nil {
-		return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
+		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid user ID")
+	}
+
+	taskID, err := helper2.ParseUUIDParam(ctx, "taskId")
+	if err != nil {
+		return respError.ErrResponse(ctx, fiber.StatusBadRequest, "Invalid task ID")
+	}
+
+	// Jika hanya parameter `userId` yang ada, hapus semua tugas yang terkait dengan pengguna tersebut
+	if userID == uuid.Nil {
+		err = h.UserRepository.DeleteUserAndTasks(userID)
+		if err != nil {
+			return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
+		}
+		return respError.ErrResponse(ctx, fiber.StatusOK, "Success delete all tasks for the user")
+	}
+
+	// Cek jika kedua parameter tidak kosong, maka hapus tugas dengan ID pengguna dan ID tugas yang sesuai
+	if userID == uuid.Nil && taskID == uuid.Nil {
+		err = h.TaskRepository.DeleteTaskByUserAndID(userID, taskID)
+		if err != nil {
+			return respError.ErrResponse(ctx, fiber.StatusInternalServerError, err.Error())
+		}
+		return respError.ErrResponse(ctx, fiber.StatusOK, "Success delete Task")
 	}
 
 	return respError.ErrResponse(ctx, fiber.StatusOK, "Success delete Task")
